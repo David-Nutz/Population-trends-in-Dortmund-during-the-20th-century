@@ -16,6 +16,12 @@ A particular focus of the project is the comparison of data published by **Dortm
 
 The project combines quantitative data analysis with historical source research in order to explain not only **what changed**, but also **why these changes occurred**.
 
+## Project structure:
+
+1. README
+2. Lange-Zeitreihen-Projekt: The Final result of the Projekt.
+3. R-Code to generate the html-document. Note that the Datasets are not available
+
 ## Objectives
 
 The main objectives of the project were:
