@@ -93,3 +93,10 @@ The statistical findings were then analysed in their historical context, includi
 ##Conclusion
 
 The project demonstrates how **data analysis, historical source research and source criticism** can be combined to reconstruct long-term demographic trends and investigate **why different official statistics sometimes report different figures for the same population or period**.
+
+
+## Future Work
+
+As many historical documents are in bad shape, an immediate digitalization is recommanded in order to prevent the los of information in the near future. 
+
+This project offered a broad overview over the Cities development. A deeper look into Dortmund's city district's is possible and would offer a more nuanced view on the development of the City.
