@@ -1,0 +1,2428 @@
+---
+title: "Die Bevölkerung Dortmunds im 20. Jahrhundert"
+output:
+    html_document:
+      toc: true
+      toc_float: true
+      toc_depth: 1
+date: "2025-03-26"
+css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width = "90%")
+```
+
+
+```{r, Import, include=FALSE, echo=FALSE}
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(janitor)
+library(ggplot2)
+library(ggiraph)
+library(ggrepel)
+library(htmltools)
+library(htmlwidgets)
+library(viridis)
+library(glue)
+library(scales)
+library(here)
+library(crosstalk)
+library(plotly)
+library(stringr)
+library(leaflet)
+library(leaflet.extras)
+library(leaflet.extras2)
+library(gt)
+library(gganimate)
+library(ggtext)
+library(ggh4x)
+library(webshot)
+library(geomtextpath)
+library(sf)
+library(ggspatial)
+library(sp)
+library(png)
+library(downloadthis)
+library(gifski)
+library(plotly)
+#neu
+library(gridExtra)
+library(foreign)
+
+
+
+rol1 <- "#87CEEB"
+rol2 <- "#51C56A"
+rol3 <- "#FDE725"
+rol4 <- "#440154"
+rol5 <- "#4A708B"
+rol6 <- "#1E9B8A"
+rol7 <- "#C2DF23"
+rol8 <- "#482173"
+rol9 <- "#25858E"
+rol10 <- "#2BB07F"
+rol11 <- "#85D54A"
+rol12 <- "#433E85"
+rol13 <- "#00bfff"
+rol14 <- "#ac39ac"
+rol15 <- "#ff8000"
+rol16 <- "darkblue"
+rol17 <- "#4C9DBD"
+
+
+
+
+# Daten Phase 2
+
+Geb_Sterb <- read_xlsx()
+
+Geb_Sterb$Quelle_Dortmund <- NULL
+Geb_Sterb$Quelle_Jahrbuch <- NULL
+Geb_Sterb$Quelle_IT <- NULL
+
+Bev2 <- read.csv2(, encoding = "latin1")
+#Bev2$Quelle <- NULL
+#Bev2$Quelle.1 <- NULL
+#Bev2$Quelle.2 <- NULL
+
+#Bev_neu <- dplyr::bind_rows(
+ # Bev2 %>% dplyr::select(Jahr = Jahr_Amt, Bevölkerung = Bevölkerung_Amt, Anmerkung, Quelle) %>% dplyr::mutate(Datenquelle = 'Amt'),
+  #Bev2 %>% dplyr::select(Jahr = Jahr_Jahrbuch, Bevölkerung = Bevölkerung_Jahrbuch, Anmerkung = Anmerkung_Jahrbuch, Quelle =  Quelle.1) %>% dplyr::mutate(Datenquelle = 'Jahrbuch'),
+#  Bev2 %>% dplyr::select(Jahr = Jahr_IT, Bevölkerung = Bevölkerung_IT_NRW, Anmerkung = Anmerkung_IT, Quelle = Quelle.2) %>% dplyr::mutate(Datenquelle = 'IT_NRW')
+#) %>% 
+  #tidyr::drop_na(Jahr)
+#Bev_neu$Quelle <- NULL
+
+Zu_Fort_Data <- read_xlsx() 
+Zu_Fort2 <- read.csv2()
+Zu_Fort2 <- mutate_at(Zu_Fort2, c("Zuzüge_IT_NRW", "Fortzüge_IT_NRW"), as.numeric)
+
+
+
+#BevolkStadtbez1925_1974_N <- aggregate(gesamt ~ Jahr, data = BevolkStadtbez1925_1974, FUN = sum)
+#colnames(BevolkStadtbez1925_1974_N)[2] <- "Gesamtstadt"
+#BevolkStadtbez1925_1974_N <- merge(BevolkStadtbez1925_1974, BevolkStadtbez1925_1974_N)
+#BevolkStadtbez1925_1974_N$Anteil <- BevolkStadtbez1925_1974_N$gesamt / BevolkStadtbez1925_1974_N$Gesamtstadt
+
+#BevolkStadtbez1925_1974_N <- rbind(BevolkStadtbez1925_1974, cbind(Stadtbezirke = "Dortmund", Fläche = NA, männlich = NA, weiblich = NA, aggregate(gesamt ~ Jahr, data = BevolkStadtbez1925_1974, FUN = sum), Anteil = NA, Anmerkung = NA))
+
+
+
+Bevoelk <- read.csv2(, encoding = "latin1")
+
+#Stadtbez55_74_N <- subset(BevolkStadtbez1925_1974, Stadtbezirke != "Innenstadt")
+#Innenstadt_55_74 <- subset(BevolkStadtbez1925_1974, Stadtbezirke == "Innenstadt")
+#Bezirk5er_74 <-filter(BevolkStadtbez1925_1974, Jahr == 1955 | Jahr == 1960 | Jahr == 1965 | Jahr == 1970 | Jahr == 1974)
+#Bezirk6er_20 <-filter(BevolkStadtbez1975_2000, Jahr == 1975 | Jahr == 1980 | Jahr == 1985 | Jahr == 1990 | Jahr == 1995 | Jahr == 2000)
+
+#BevolkStadtbez1925_1974A <- mutate_at(BevolkStadtbez1925_1974, c("männlich", "weiblich", "gesamt", "Jahr"), as.numeric)
+#names(Zu_Fort_Data)[names(Zu_Fort_Data) == "Fortzüge_Amt Dortmund"] <-"Fortzüge_Amt_Dortmund"
+
+bev_amt <- Bevoelk |> dplyr::select(Jahr_Amt:Anmerkung)
+bev_amt$Datensatz <- "Amt"
+colnames(bev_amt) <- c("Jahr", "Anzahl", "Anmerkung", "Datensatz")
+
+bev_buch <- Bevoelk |> dplyr::select(Jahr_Jahrbuch:Anmerkung_Jahrbuch)
+bev_buch$Datensatz <- "Jahrbuch"
+colnames(bev_buch) <- c("Jahr", "Anzahl", "Anmerkung", "Datensatz")
+
+bev_it <- Bevoelk |> dplyr::select(Jahr_IT:Anmerkung_IT)
+bev_it$Datensatz <- "IT_NRW"
+colnames(bev_it) <- c("Jahr", "Anzahl", "Anmerkung", "Datensatz")
+
+#bev_long_fmt <- rbind(bev_amt, bev_buch, bev_it)
+#bev_long_ftd <- bev_long_fmt  |> dplyr::filter(!is.na(Jahr), !is.na(Anzahl))
+#bev_long_20 <- bev_long_ftd |> dplyr::filter(Jahr >= 1975)  
+#save(bev_long_ftd, file= "daten/bev_long_ftd.rds")
+#save(bev_long_20, file="daten/bev_long_20.rds")
+#load(file="daten/bev_long_ftd.rds")
+#load(file="daten/bev_long_20.rds")
+#df_plot <- bev_long_ftd |> mutate(
+ # Quellenbasis = case_when(Datensatz == "Amt" ~ "Dortmunder Amt",
+  #                 Datensatz == "Jahrbuch" ~ "Statistisches Jahrbuch",
+   #                Datensatz == "IT_NRW" ~ "IT NRW")
+#)
+#BevoelkA <- mutate_at(Bevoelk, C("Jahr", "Bevoelkerung_Amt", "Bevoelkerung_Jahrbuch", "Bevoelkerung_IT_NRW"), as.numeric)
+#BevoelkA <- Bevoelk %>% 
+ # mutate(Jahr=as.numeric(Jahr)) %>% 
+  #mutate(Bevoelkerung_Amt=as.numeric(Bevoelkerung_Amt)) %>%
+  #mutate(Bevoelkerung_Jahrbuch=as.numeric(Bevoelkerung_Jahrbuch)) %>%
+  #mutate(Bevoelkerung_IT_NRW=as.numeric(Bevoelkerung_IT_NRW))
+```
+
+
+
+
+<div style="display:flex;justify-content: center;">
+![](){width=650px}
+</div>
+
+Quelle: Städteatlas, S. 37.
+
+
+
+# 1. Die  Bevölkerungsentwicklung Dortmunds im 20. Jahrhundert
+
+Die Zielsetzung dieses Projekts besteht in der systematischen Aufarbeitung der Bevölkerungsentwicklung der Stadt Dortmund im 20. Jahrhundert. Darüber hinaus sollen die unterschiedlichen Angaben der Dortmunder Statistik und des Statistischen Landesamts visuell dargestellt werden. Abweichungen zwischen den Quellen sollen sichtbar gemacht und, soweit möglich, erklärt werden.
+
+Kommunale Angaben zum Bevölkerungsstand liegen – mit Ausnahme des Jahres 1944 – für sämtliche Jahre vor. Hinsichtlich der Daten zu Geburten, Sterbefällen sowie Zu- und Fortzügen konnte der zeitliche Betrachtungshorizont im Rahmen der Quellensichtung im Dortmunder Stadtarchiv erheblich erweitert werden. Neben den Angaben von IT.NRW in der Landesdatenbank ist als dritte Quelle das Statistische Jahrbuch Deutscher Städte/Gemeinden hervorzuheben. Diese Publikation, die seit Ende des 19. Jahrhunderts vom Deutschen Städtetag herausgegeben wird, basierte bis zur kommunalen Gebietsreform am 01.01.1975 auf den Angaben der Kommunen. Von 1975 bis 2000 wurden in diesem Band die Daten des Statistischen Landesamts veröffentlicht.
+
+
+## 1.1. Methodische Differenzen 
+
+Volkszählungen, heute unter dem Begriff Zensus bekannt, bilden die Grundlage für die Berechnung der Bevölkerungszahl Dortmunds. Bei der Frage, welche Methode zur Fortschreibung der Dortmunder Bevölkerung am geeignetsten sei, verfolgten das Dortmunder Amt für Statistik einerseits und das Statistische Landesamt (heute IT.NRW) andererseits jedoch wiederholt unterschiedliche Ansätze.
+
+So führte die Praxis des Statistischen Landesamtes in den 1950er- und 1960er-Jahren, Zu- und Fortzüge auf Basis der Anmeldescheine der Herkunftsgemeinden zu berechnen dazu, dass der Bevölkerungszuwachs der Stadt Dortmund durch das Landesamt bis zur Umstellung auf die Volkszählung von 1961 deutlich geringer eingeschätzt wurde als durch das Dortmunder Amt für Statistik und Wahlen. Der Leiter der Dortmunder Statistik, Dr. Dietrich, beklagte 1957, dass die Berechnungen des Landesamtes für das Jahr 1956 um 12.361 Einwohner_innen von den Dortmunder Zahlen abwichen (Dortmunder Statistik. 1957a, S. 129). Darüber hinaus vermerkt Dietrich, dass die Abweichungen bei den Bevölkerungsfortschreibungen auf Basis der Volkszählungen von 1950 und 1956 für das Jahr 1956 auf methodische Fehler bei der Durchführung der Zählung von 1950 und auf intendiert zu hoch Angegebene Bewohnerzahlen pro Wohnung seitens der Befragten zurückzuführen sei, da die Befragten 1950 starke Anreize gehabt hätten, möglichst hohe Einwohnerzahlen für ihre Wohnungen anzugeben (Dortmunder Statistik. 1957a, S. 129).
+
+Ähnliche Hinweise finden sich im Statistischen Jahrbuch Deutscher Gemeinden von 1954, wo Dr. Anton Zwick in der Einleitung des Kapitels über die Bevölkerungsstände betonte, dass Länder, Bund und Kommunen zu unterschiedlichen Ergebnissen gelangten, da sie verschiedene Verfahren im Umgang mit Personen mit Zweitwohnsitz anwendeten (Jahrbuch. 1954). Weitere Differenzen in den Wanderungsstatistiken der 1940er- und 1950er-Jahre resultierten aus unterschiedlichen Auffassungen der statistischen Ämter darüber, wie und wo Flüchtlingsströme in den jeweiligen Statistiken berücksichtigt werden sollten – ein Umstand, der auch im Statistischen Jahrbuch von 1953 vermerkt wurde (Jahrbuch. 1953).
+
+Neben methodischen Unterschieden zeigt sich anhand der Daten auch, dass die verschiedenen Volkszählungen als Grundlage der Fortschreibung eine zentrale Ursache für abweichende Bevölkerungszahlen Dortmunds darstellten. So ergab die Fortschreibung der Bevölkerungszahl für 1955 auf Basis der Volkszählung von 1950 eine Einwohnerzahl von 622.904, während die Berechnung auf Grundlage der Volkszählung von 1956 für dasselbe Jahr 602.493 Einwohner_innen auswies. Eine Differenz von 10.000 bis 20.000 Personen – je nach zugrunde liegender Volkszählung – ist auch für die Jahre 1955, 1956, 1961 sowie 1969 bis 1970 nachweisbar. Damit büßten die Fortschreibungen insbesondere bis in die 1970er-Jahre nach etwa fünf Jahren zunehmend an Genauigkeit ein.
+
+```{r}
+
+Plot_Gesamt <- ggplot(data = Bev2)+
+  geom_line(data = Bev2,
+            aes(x= Jahr_Amt, y= Bevölkerung_Amt,
+                 group = Anmerkung, color = "Bevölkerung_Amt") ,linetype = 1,linewidth=0.7, show.legend = FALSE)+
+    geom_line(data = Bev2,
+            aes(x= Jahr_Jahrbuch, y= Bevölkerung_Jahrbuch, color = "Bevölkerung_Jahrbuch"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+  geom_line(data = Bev2,
+            aes(x= Jahr_IT, y= Bevölkerung_IT_NRW, color = "Bevölkerung_IT_NRW"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+  ggtitle("Die Dortmunder Bevölkerungsentwicklung im 20. Jahrhundert")+
+ # guides(color = guide_legend(title = "Quellenbasis:"))+
+ scale_color_manual(values = c("Bevölkerung_Amt" = rol3, "Bevölkerung_Jahrbuch" = rol2, "Bevölkerung_IT_NRW" = rol1))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 10, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=6),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=4))+
+  annotate("text", x = 1900, y = 640000, size = 2.5, label = "Bevölkerungsstand (Dortmunder Statistik)", colour = rol3, size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1900, y = 600000, size = 2.5, label = "Bevölkerungsstand (Stat. Jahrbuch)", colour = rol2, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 560000, size = 2.5, label = "Bevölkerungsstand (IT. NRW)", colour = rol1, size = 1.3, fontface = "bold", hjust = "left")+
+  scale_y_continuous(labels = c("100.000", "200.000", "300.000", "400.000", "500.000", "600.000", "700.000"), n.breaks = 7, limits = c(100000, 700000), expand = c(0,0))+
+  scale_x_continuous(breaks=c(1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_Gesamt,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                   #Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+```
+
+
+
+# 2. Die natürliche Bevölkerungsentwicklung im 20. Jahrhundert
+
+Anhand der vorliegenden Grafik wird deutlich, dass die Geburtenzahlen der Stadt Dortmund von drei Phasen hoher Geburten geprägt waren, die jeweils durch welthistorische Ereignisse unterbrochen wurden: den Ersten Weltkrieg, die Weltwirtschaftskrise Ende der 1920er- und 1930er-Jahre sowie den Zweiten Weltkrieg. Darüber hinaus wirkten sich die gesellschaftlichen Veränderungen der industriellen Revolution seit den letzten Jahrzehnten des 19. Jahrhunderts auf die Geburtenzahlen aus. Insbesondere führte die drastisch gesunkene Säuglingssterblichkeit infolge medizinischer Fortschritte zu einem Rückgang der Geburten in den hochentwickelten Industrienationen.
+
+In der zweiten Hälfte des 20. Jahrhunderts fielen die Geburtenzahlen in der Bundesrepublik Deutschland erstmals unter das für den Bevölkerungserhalt notwendige Niveau. Diese Entwicklung wird in erster Linie mit der Emanzipation von Frauen, ihrer zunehmenden Integration in den Arbeitsmarkt sowie den damit verbundenen veränderten Rollenerwartungen und individuellen Lebensentwürfen erklärt (vgl. Dortmunder Statistik 1977a, S. 11–13).
+
+
+
+```{r}
+Geb_Sterb_Gesamt <- Geb_Sterb
+
+Geb_Sterb_GesamtGesamt <- ggplot(Geb_Sterb_Gesamt)+
+  geom_line(aes(x = Jahr, y = Geburten_Dor),linetype = 1,linewidth=0.6, color = rol1)+
+  geom_line(aes(x=Jahr, y = Todesfälle_Dor),linetype = 1,linewidth=0.6, color = rol5)+
+  geom_line(aes(x = Jahr, y = Geburten_Jahr),linetype = 1,linewidth=0.6, color = rol2)+
+  geom_line(aes(x= Jahr,Todesfälle_Jahr),linetype = 1,linewidth=0.6, color = rol11)+
+  geom_line(aes(x = Jahr, y = Geburten_IT),linetype = 1,linewidth=0.6, color = "#A0522D")+
+  geom_line(aes(x=Jahr,Todesfälle_IT),linetype = 1,linewidth=0.6, color = "#CD6839")+
+  ggtitle("Die natürliche Bevölkerungsentwicklung Dortmunds im 20. Jahrhundert")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  annotate("text", x = 1900, y = 11500, size = 2.2, label = "Lebendgeborene (Stat. Jahrbuch)", colour = rol2, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 11000, size = 2.2, label = "Todesfälle (Stat. Jahrbuch)", colour = rol11, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 10500, size = 2.2, label = "Lebendgeborene (IT.NRW)", colour = "#A0522D", size = 1.3, fontface = "bold",  hjust = "left")+
+      annotate("text", x = 1900, y = 10000, size = 2.2, label = "Todesfälle (IT. NRW)", colour = "#CD6839", size = 1.3, fontface = "bold",  hjust = "left")+
+annotate("text", x = 1900, y = 9500, size = 2.2, label = "Lebendgeborene (Dortmunder Statistik)", colour = rol1, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 9000, size = 2.2, label = "Todesfälle (Dortmunder Statistik)", colour = rol5, size = 1.3, fontface = "bold",  hjust = "left")+
+  scale_x_continuous(breaks=c(1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000))+
+  scale_y_continuous(labels = c("4.000", "5.000", "6.000", "7.000", "8.000", "9.000", "10.000", "11.000", "12.000"), n.breaks= 9, limits = c(4000, 12000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Geb_Sterb_GesamtGesamt,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+```
+
+
+
+
+# 3. Die Wanderungsstatistik Dortmunds im 20. Jahrhundert
+
+Die vorliegenden Daten zu den Wanderungsbewegungen der Dortmunder_innen lassen sich in drei Zeitabschnitte gliedern:
+
+1900–1943: Dieser Zeitraum war durch sehr hohe Zu- und Fortzugszahlen gekennzeichnet.
+
+1948–1959: In der Nachkriegsphase, die mit einem massiven Zuzug aus unterschiedlichen Quellen (Kriegsheimkehrer, Arbeitssuchende und verschiedene Flüchtlingsströme) verbunden war, verzeichnete die Stadt einen deutlichen Bevölkerungszuwachs.
+
+1960–2000: Diese Phase war von vielfältigen Einflüssen geprägt, darunter das Zechensterben, die Zuwanderung von Spätaussiedlern und dem Mauerfall. Infolgedessen kam es zu kurzzeitigen und teils massiven Schwankungen der jährlichen Zu- und Fortzüge.
+
+```{r}
+#Zu_Fort_long <- Zu_Fort_Data |> pivot_longer(cols = c(2:11), names_to = "Merkmal", values_to ="Anzahl")
+#Zu_Fort_long_A <- Zu_Fort_long |> filter(Merkmal %in% c("Zuzüge_Amt_Dortmund", "Fortzüge_Amt_Dortmund")) 
+
+#names(Zu_Fort_Data)[names(Zu_Fort_Data) == "Fortzüge_Amt Dortmund"] <-"Fortzüge_Amt_Dortmund"
+#names(Zu_Fort_Data)[names(Zu_Fort_Data) == "Fortzüge_Amt Dortmund"] <-"Fortzüge_Amt_Dortmund"
+# Höchste Zahl aus Quellenangabe extrahieren als neue Spalte
+Zu_Fort_Gesamt <- Zu_Fort2 |> 
+  mutate(
+    Quelle_Version = str_extract(Quelle_Dortmund, "\\d+"),
+    Quelle_Version = as.numeric(Quelle_Version)
+  )
+# Neuer Datensatz, welcher für jedes Jahr die höchste aus der Quellenangabe extrahierte Zahl angbit
+max_version_gesamt <- Zu_Fort_Gesamt |> group_by(Jahr) |> 
+  summarise(
+    max_version_gesamt = max(Quelle_Version, na.rm = TRUE)
+  )
+# beide Datensätze werden verbunden
+Zu_Fort_Gesamt <- Zu_Fort_Gesamt |> left_join(max_version_gesamt |> dplyr::filter(!is.na(Jahr)))
+# weitere Spalte im Datensatz angelegt durch ifelse. Dabei folgender Ansatz: Wenn die Angabe für Quelle_Version und für Version_Max gleich sind, also die höchste Zahl, dann wird in neuer Spalte eine 1 eingetragen, andernfalls eine 0
+
+Zu_Fort_Gesamt <- Zu_Fort_Gesamt |> mutate(Finale_Daten = ifelse(Quelle_Version == max_version_gesamt, 1, 0))
+
+
+Plot_ZuFort_Gesamt <- ggplot(Zu_Fort_Gesamt)+
+  geom_line(aes(x = Jahr, y = Zuzüge_Amt_Dortmund),linetype = 1,linewidth=0.6, color = "#CDAD00")+
+  geom_line( data = Zu_Fort_Gesamt |> dplyr::filter(Finale_Daten == 1), aes(x = Jahr, y = Fortzüge_Amt_Dortmund),linetype = 1,linewidth=0.6, color= "#FFD700")+
+  geom_point(data = Zu_Fort_Gesamt |> dplyr::filter(Finale_Daten == 0), aes(x = Jahr, y = Fortzüge_Amt_Dortmund),size = 0.3, color= "#FFD700")+
+  geom_line(aes(x = Jahr, y = Zuzüge_Jahrbuch),linetype = 1,linewidth=0.6, color= "#104E8B")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.6, color= "#1E90FF")+
+  ggtitle("Die Wanderungsdaten der Dortmunder_innen im 20. Jahrhundert")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+ # stat_difference(aes(x = Jahr, ymin=Zuzüge_Amt_Dortmund, ymax=Fortzüge_Amt_Dortmund),show.legend = FALSE, alpha=0.4)+
+  scale_x_continuous(breaks=c(1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000))+
+  scale_y_continuous(labels = c( "10.000","20.000", "30.000", "40.000", "50.000"), n.breaks= 5, limits = c(10000, 50000), expand=c(0,0))+
+  annotate("text", x = 1900, y = 17000, size = 2.3, label = "Fortzüge (Dortmunder Statistik)", colour = "#FFD700", size = 3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 15300, size = 2.3, label = "Zuzüge (Dortmunder Statistik)", colour = "#CDAD00", size = 3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 13600, size = 2.3, label = "Fortzüge (Stat. Jahrbuch)", colour = "#1E90FF", size = 3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 11900, size = 2.3, label = "Zuzüge (Stat. Jahrbuch)", colour = "#104E8B", size = 3, fontface = "bold",  hjust = "left")+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Plot_ZuFort_Gesamt,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+```
+
+
+
+# 4. 1900-1945
+Die ersten beiden Jahrzehnte des 20. Jahrhunderts waren stark durch die expandierende Montanindustrie, insbesondere den Kohlebergbau sowie die Eisen- und Stahlerzeugung geprägt. Ihr hoher Arbeitskräftebedarf führte zu einem stetigen Zuzug nach Dortmund. In Kombination mit mehreren Eingemeindungen sowie konstant höheren Geburten- als Sterbezahlen wuchs die Bevölkerung zwischen 1900 und 1920 von 142.000 auf 313.000 Einwohner_innen an.
+
+Die Vergrößerung der Stadtfläche und Bevölkerung erfolgte in der ersten Hälfte des 20. Jahrhunderts auch durch zahlreiche Eingemeindungen. Nach Högl zielten diese darauf ab, den wachsenden Raum- und Flächenbedarf von Bevölkerung und Industrie durch die Eingliederung weniger dicht besiedelter Umlandgemeinden zu decken (Högl 1994, S. 351). Zwischen 1904 und 1929 fanden fünf größere Eingemeindungen statt:
+
+1905: Körne
+
+1914: Dorstfeld, Huckarde, Wischlingen, Rahm, Deusen, Eving, Lindenhorst, Kemminghausen
+
+1918: Brackel, Wambel
+
+1928: Hörde, Oespel, Kley, Lütgendortmund, Bövinghausen, Kirchlinde, Marten, Westerfilde, Bodelschwingh, Brünninghausen, Mengede, Nette, Ellinghausen, Holthausen, Brechten, Kirchderne, Derne, Grevel, Lanstrop, Kurl, Husen, Asseln, Wickede
+
+1929: Aplerbeck, Barop, Berghofen, Kirchhörde, Schüren, Sölde, Somborn, Syburg, Wellinghofen
+
+Bis 1929 vergrößerte sich die Fläche Dortmunds auf 27.152 Hektar, womit sie nach Berlin zur flächenmäßig zweitgrößten Kommune der Weimarer Republik aufstieg (Dortmunder Statistik 1976a, S. 13, 17; Högl 1994, S. 414).
+
+Bemerkenswert ist der vergleichsweise geringe Einfluss des Ersten Weltkriegs auf die Bevölkerungsentwicklung Dortmunds, obwohl zehntausende Männer zum Militär eingezogen wurden. So sank die Zahl der Beschäftigten durch den Einzug von Wehrpflichtigen zwischen Juli 1914 und August 1915 von 426.600 auf 280.000 (Luntowski 1994, S. 357). 
+Zum Ausgleich dafür wurden neben Kriegsgefangenen auch die Arbeitskraft der Dortmunderinnen in der Industrie eingesetzt (Luntowski 1988, S. 87f.; Luntowski 1994, S. 357). 
+
+Lediglich 1916 ist ein leichter Bevölkerungsrückgang nachweisbar, während die Einwohnerzahl in den Jahren 1915, 1917 und 1918 sogar geringfügig anstieg. Diese Entwicklung erklärt sich vor allem dadurch, dass Dortmund im Ersten Weltkrieg kein Kriegsschauplatz war und die kriegsbedingten Bevölkerungsverluste im wesentlichen auf die Todesfälle unter den eingezogenen Soldaten beschränkt blieben (vgl. Luntowski 1994, S. 357).
+
+
+
+```{r}
+
+#1900-1939
+
+
+df_plot_00_45 <- Bev2 |> dplyr::mutate(
+                                       Bevölkerung_Amt = ifelse(Jahr_Amt %in% c(1946:2000), NA, Bevölkerung_Amt),
+                                       Bevölkerung_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1946:2000), NA, Bevölkerung_Jahrbuch),
+                                       Bevölkerung_IT_NRW = ifelse(Jahr_IT %in% c(1946:2000), NA, Bevölkerung_IT_NRW),
+                                       Jahr_Amt = ifelse(Jahr_Amt %in% c(1946:2000), NA, Jahr_Amt),
+                                       Jahr_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1946:2000), NA, Jahr_Jahrbuch),
+                                       Jahr_IT = ifelse(Jahr_IT %in% c(1946:2000), NA, Jahr_IT))
+                                       
+
+
+Plot_00_45 <- ggplot(df_plot_00_45)+
+  geom_line(data = df_plot_00_45,
+            aes(x= Jahr_Amt, y= Bevölkerung_Amt,
+                group = Anmerkung, color = "Bevölkerung_Amt"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+    geom_line(data = df_plot_00_45,
+            aes(x= Jahr_Jahrbuch, y= Bevölkerung_Jahrbuch, color = "Bevölkerung_Jahrbuch"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+  ggtitle("Die Bevölkerung Dortmunds von 1900 bis 1945")+
+ # guides(color = guide_legend(title = "Quellenbasis:"))+
+ scale_color_manual(values = c("Bevölkerung_Amt" = rol3, "Bevölkerung_Jahrbuch" = rol2, "Bevölkerung_IT_NRW" = rol1))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 10, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=6),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=4))+
+    geom_point_interactive(aes(x=Jahr_Amt, y=Bevölkerung_Amt,
+                             tooltip = paste0("Amt für Statistik und Wahlen Dortmund", "\n", "Jahr: ", Jahr_Amt, "\n", "Bevölkerungsstand: ", format(Bevölkerung_Amt, big.mark = ".", decimal.mark = ","), "\n", Anmerkung), data_id=Bevölkerung_Amt),
+                         pch=21,
+                         color= rol3,
+                         fill= rol3,
+                         size=0.5,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr_Amt, y=Bevölkerung_Jahrbuch, 
+                             tooltip = paste0("Stat. Jahrbuch Deutscher Gemeinden/Städte", "\n","Jahr: ", Jahr_Amt, "\n", "Bevölkerungsstand: ", format(Bevölkerung_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n"), data_id=Bevölkerung_Jahrbuch),
+                         pch=21,
+                         color= rol2,
+                         fill = rol2,
+                         size=0.5,
+                         width=1)+
+  # 1. Weltkrieg
+    annotate("text", x = 1916, y = 360000, size = 2, label = "1. Weltkrieg", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1914.7, y = 350000, xend = 1918.11, yend = 350000, curvature = .0, color="black")+
+  #2. Weltkrieg
+    annotate("text", x = 1942, y = 570000, size = 2, label = "2. Weltkrieg", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1939.9, y = 555000, xend = 1945, yend = 555000, curvature = .0, color="black")+  
+  #Weltwirtschaftskrise
+    annotate("text", x = 1925, y = 560000, size = 2, label = "Börsencrash von 1929", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1922.5, y = 544634, xend = 1928.9, yend = 544634, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+  
+  #Eingemeindung Körne
+    annotate("text", x = 1904, y = 225000, size = 1.8, label = "Körne eingemeindet", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1905, y = 220000, xend = 1905, yend = 175500, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+ 
+  #Eingemeindung von Dorstfeld, Huckarde, Wischlingen, Rahm, Deusen, Eving, Lindenhorst, Kemminghausen
+    annotate("text", x = 1914, y = 140000, size = 1.8, label = "Dorstfeld, Huckarde, Wischlingen, \n Rahm, Deusen, Eving, Lindenhorst, \n Kemminghausen eingemeindet", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1914, y = 160000, xend = 1914, yend = 250000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+  #Eingemeindung von Brackel und Wambel
+    annotate("text", x = 1921, y = 240000, size = 1.8, label = "Brackel und Wambel eingemeindet", colour = "black", size = 1.3, fontface = "bold")+
+  annotate("curve", x = 1920, y = 250000, xend = 1918, yend = 295000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+  # Eingemeindung von Hörde, Oespel, Kley, Lütgendortmund, Bövinghausen, Kirchlinde, Marten, Westerfilde, Bodelschwingh, Brünninghausen, Mengede, Nette, Ellinghausen, Holthausen, Brechten, Kirchderne, Derne, Grevel, Lanstrop, Kurl, Husen, Asseln und Wickede
+    annotate("text", x = 1900, y = 469000, size = 1.8, label = "Hörde, Oespel, Kley, Lütgendortmund, Bövinghausen,\n Kirchlinde, Marten, Westerfilde, Bodelschwingh, Brünninghausen, \n Mengede, Nette, Ellinghausen, Holthausen, Brechten, Kirchderne, \n Derne, Grevel, Lanstrop, Kurl, Husen, Asseln und Wickede eingemeindet", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1923, y = 469000, xend = 1928, yend = 469000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+  
+  # Eingemeindung von Aplerbeck, Barop, Berghofen, Kirchhörde, Schüren, Sölde, Somborn, Syburg und Wellinghofen
+      annotate("text", x = 1930, y = 425000, size = 1.8, label = "Aplerbeck, Barop, Berghofen, Kirchhörde, \n Schüren, Sölde, Somborn, Syburg und \n Wellinghofen eingemeindet", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  # Legende
+ annotate("text", x = 1942, y = 570000, size = 2, label = "2. Weltkrieg", colour = "black", size = 1.5, fontface = "bold")+
+    annotate("curve", x = 1932, y = 450000, xend = 1929, yend = 540000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+   annotate("text", x = 1927, y = 135000, size = 2.3, label = "Dortmunder Statistik", colour = rol3, size = 1.5, fontface = "bold",  hjust = "left", hjust = "left")+
+  annotate("text", x = 1927, y = 120000, size = 2.3, label = "Stat. Jahrbuch Deutscher Gemeinden", colour = rol2, size = 1.5, fontface = "bold",  hjust = "left", hjust = "left")+
+  scale_y_continuous(labels = c("100.000", "200.000", "300.000", "400.000", "500.000", "600.000"), n.breaks = 6, limits = c(100000, 600000), expand = c(0,0))+
+  scale_x_continuous(breaks=c(1900, 1905, 1910,1915, 1920,1925, 1930,1935, 1940, 1945))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_00_45,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                   #Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+#plotly::ggplotly(Plot_00_39) %>%  config(displayModeBar=FALSE)
+
+
+
+```
+<button type="button" class="collapsebutton" data-toggle="collapse" data-target="#Info-45">Mehr Details zur Bevölkerungsentwicklung</button>
+<div id="Info-45" class="collapse">
+
+<p>
+
+
+
+## {.tabset}
+
+### 4.1. Die Zu- und Fortzüge nach und aus Dortmund
+
+Zu- und Fortzüge Dortmunds 1900-1945
+
+Die verfügbaren Daten zu den Zu- und Fortzugströmen der Dortmunder Bevölkerung weisen im Zeitraum 1913–1923 eine zehnjährige Lücke auf. Dies lässt sich auf zwei Gründe zurückführen:
+
+Während des Ersten Weltkriegs wurden die Publikationen des Statistischen Jahrbuchs Deutscher Städte eingestellt. Erst 1924 setzte die Veröffentlichung wieder ein, da nach Kriegsende eine umfassende Überarbeitung vorgenommen wurde (Jahrbuch. 1927).
+
+Im Stadtarchiv Dortmund konnten keine Wanderungsdaten der kommunalen Statistik für die Zeit vor 1924 nachgewiesen werden.
+
+Die für die Jahre 1903–1911 belegten hohen Zu- und Fortzugszahlen sind vor allem vor dem Hintergrund der damaligen, noch deutlich geringeren Stadtfläche und Bevölkerungszahl auffällig. Eine Erklärung liefert die Struktur des Kohlebergbaus, der in diesem Zeitraum die meisten Arbeitsplätze in Dortmund stellte. Der Leiter der Dortmunder Statistik in den 50er und 60er Jahren, Dr. Dietrich, betonte in einer Untersuchung des Wanderungsverhaltens im Jahr 1960, dass sich der Bergbau grundsätzlich durch eine hohe Fluktuation von Arbeitskräften auszeichne (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 50).
+
+Eine starke Nachfrage nach Arbeitskräften, kombiniert mit akutem Wohnungsmangel, harten Arbeitsbedingungen und schwachen Gewerkschaften, die vor dem Ersten Weltkrieg weder über ausreichende Mitgliederzahlen noch über finanzielle Mittel verfügten, um die Interessen der Bergleute durchzusetzen, dürfte maßgeblich zu den hohen jährlichen Zu- und Fortzügen beigetragen haben. Zwar zog die wirtschaftliche Nachfrage nach Arbeitskräften zahlreiche Menschen nach Dortmund, doch die Arbeits- und Lebensbedingungen führten zugleich zu hohen Fortzugszahlen (Rockrohr 2015).
+
+Der kurzzeitige starke Anstieg der Zu- und Fortzüge in den Jahren 1928 und 1929 ist auf die großflächigen Eingemeindungen zurückzuführen, die die Einwohnerzahl und damit auch die Wanderungsbewegungen stark anwachsen ließen. Der anschließende Rückgang der Zu- und insbesondere der Fortzüge ab 1929 lässt sich durch die Weltwirtschaftskrise erklären, die auch die Dortmunder Wirtschaft massiv traf und die Arbeitslosigkeit in die Höhe trieb.
+
+Es folgte eine bis in den Zweiten Weltkrieg hineinreichende Phase negativer Wanderungssalden, die sowohl die anhaltenden Folgen der Weltwirtschaftskrise als auch die durch den am 1. September 1939 begonnenen Krieg bedingten Entwicklungen widerspiegeln. Während der massive Anstieg der Fortzüge durch die alliierten Luftangriffe verursacht wurde, resultierte der parallele Anstieg der Zuzüge aus dem Einsatz von Kriegsgefangenen und Zwangsarbeiter_innen in der Dortmunder Industrie. Im Gegensatz zur Situation im Ersten Weltkrieg ist dieser Einfluss nun eindeutig belegt: In einem Schreiben vom 15. Dezember 1943 (Nr. 4117a) forderte das Statistische Reichsamt das Dortmunder Amt für Statistik auf, „Ausländer“ (womit vor allem Zwangsarbeiter gemeint sind) und „Juden“ gesondert auszuweisen und nicht in die Bevölkerungsstatistik einzurechnen (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 54). Diese Vorgabe sowie die intensivierten Luftangriffe erklären den massiven Rückgang der Zuzüge im Jahr 1943. Dies lässt die Vermutung zu, dass bis zum Zeitpunkt dieses Schreibens die Praxis vorherrschte, Zwangsarbeiter in der Bevölkerungsstatistik zu Berücksichtigen. Dies könnte als Indiz dafür gewertet werden, dass Zwangsarbeiter auch im Ersten Weltkrieg einen Einfluss auf die Bevölkerungsstatistik hatten.
+
+
+```{r}
+#Zu_Fort_long <- Zu_Fort_Data |> pivot_longer(cols = c(2:11), names_to = "Merkmal", values_to ="Anzahl")
+#Zu_Fort_long_A <- Zu_Fort_long |> filter(Merkmal %in% c("Zuzüge_Gesamt", "Fortzüge_Gesamt")) 
+
+
+
+Zu_Fort_short_45 <- Zu_Fort2 |> subset(Jahr <1946) 
+#Zu_Fort_short_45 <- Zu_Fort_short_45[-14,]
+
+
+
+Plot_Zu_short_45 <- ggplot(Zu_Fort_short_45)+
+  geom_line(aes(x = Jahr, y = Zuzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color = "#CDAD00")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color= "#FFD700")+
+  geom_line(aes(x = Jahr, y = Zuzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#104E8B")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#1E90FF")+
+  ggtitle("Zu- und Fortzüge Dortmunds von 1900 bis 1943")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+ # stat_difference(aes(x = Jahr, ymin=Zuzüge_Amt_Dortmund, ymax=Fortzüge_Amt_Dortmund),show.legend = FALSE, alpha=0.4)+
+scale_fill_manual(values=c("#ac39ac", rol13, "transparent"))+
+  geom_point_interactive(aes(x=Jahr, y=Zuzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Zuzüge_Amt_Dortmund),
+                         fill = "#CDAD00",
+                         pch=21,
+                         size=0.5,
+                         color="#CDAD00",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Fortzüge_Amt_Dortmund),
+                         fill = "#FFD700",
+                         pch=21,
+                         size=0.5,
+                         color="#FFD700",
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Zuzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Zuzüge_Jahrbuch),
+                         fill = "#104E8B",
+                         pch=21,
+                         size=0.5,
+                         color= "#104E8B",
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Fortzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Fortzüge_Jahrbuch),
+                         fill = "#1E90FF",
+                         pch=21,
+                         size=0.5,
+                         color="#1E90FF",
+                         width=1)+
+  scale_x_continuous(breaks=c(1900, 1905, 1910, 1915, 1920, 1925, 1930, 1935, 1940, 1945, 1950))+
+  scale_y_continuous(labels = c( "10.000","20.000", "30.000", "40.000", "50.000"), n.breaks= 5, limits = c(10000, 50000), expand=c(0,0))+
+  annotate("text", x = 1900, y = 11500, size = 1.8, label = "Zuzüge (Stat. Jahrbuch)", colour = "#104E8B", size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 13000, size = 1.8, label = "Fortzüge (Stat. Jahrbuch)", colour = "#1E90FF", size = 1.3, fontface = "bold",  hjust = "left")+
+annotate("text", x = 1900, y = 14500, size = 1.8, label = "Zuzüge (Dortmunder Statistik)", colour = "#CDAD00", size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 16000, size = 1.8, label = "Fortzüge (Dortmunder Statistik)", colour = "#FFD700", size = 1.3, fontface = "bold",  hjust = "left")+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Plot_Zu_short_45,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+
+
+
+### 4.2. Die natürliche Bevölkerungsentwicklung Dortmunds bis 1945 
+
+Die Entwicklung der jährlichen Geburtenzahlen bis 1945 zeigt deutliche Einbrüche und Anstiege, die – ähnlich wie die Zu- und Fortzugsbewegungen – eng mit den großen welthistorischen Ereignissen der jeweiligen Zeit verbunden sind:
+
+1914–1916: Der Einbruch in diesem Zeitraum ist eine direkte Folge des Ersten Weltkriegs. Die Werte von 1924 bis einschließlich 1927 verdeutlichen zudem, dass sich die Geburtenzahlen in Dortmund nicht wieder auf das Vorkriegsniveau einpendelten. Dies dürfte nicht zuletzt auf den tiefgreifenden gesellschaftlichen Wandel nach dem Krieg zurückzuführen sein (vgl. Högl 1994, S. 407–409, 416).
+
+1928–1929: Der massive Anstieg in diesen Jahren lässt sich auf die durch die großflächigen Eingemeindungen von 1928 und 1929 stark gestiegene Bevölkerungszahl zurückführen (vgl. Högl 1994, S. 414).
+
+1931–1933: Diese Phase war geprägt von den massiven Folgen der Weltwirtschaftskrise, der Inflation in der Weimarer Republik und einer zunehmenden politischen Instabilität (vgl. Högl 1994, S. 416, 427).
+
+1934–1939: In der Zeit bis zum Ausbruch des Zweiten Weltkriegs förderten die Nationalsozialisten den Anstieg der Geburtenrate durch Maßnahmen wie Steuervergünstigungen für Ehepaare, die gesellschaftliche Aufwertung der Mutterrolle und finanzielle Unterstützungsleistungen wie das Kindergeld (vgl. Deutsches Historisches Museum 2025).
+
+1939–1944: Der Zweite Weltkrieg führte zu deutlichen Einbrüchen der jährlichen Geburtenzahlen.
+
+Auffällig sind zudem die deutlich höheren Angaben im Statistischen Jahrbuch Deutscher Städte für den Zeitraum 1900–1912. Diese Differenz dürfte darauf zurückzuführen sein, dass dort sämtliche Geburten einschließlich der Kinder ortsfremder Mütter berücksichtigt wurden. Das Dortmunder Amt für Statistik unterschied hingegen zwischen ortsansässigen und ortsfremden Müttern (vgl. Jahrbuch 1902).
+
+Dortmund verzeichnete in der ersten Hälfte des 20. Jahrhunderts – mit Ausnahme der beiden Weltkriegsjahre – einen deutlichen Geburtenüberschuss gegenüber den Sterbefällen. Der jährliche Bevölkerungszuwachs lag dabei in den meisten Jahren zwischen 3.000 und 4.300 Personen.
+
+Bei den Sterbefällen während der Weltkriege wird anhand der Daten deutlich, dass die im Kriegsdienst gefallenen Männer im Ersten Weltkrieg in den Sterbefallstatistiken berücksichtigt wurden, während dies im Zweiten Weltkrieg unterblieb. Die vom Dortmunder Amt für Statistik ausgewiesene Zahl der Sterbefälle für das Jahr 1937, die im Stadtarchiv überliefert ist, dürfte zudem mit hoher Wahrscheinlichkeit auf einer fehlerhaften Angabe des Amts beruhen (vgl. Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 46).
+
+
+
+```{r}
+
+
+Geb_Sterb45 <- subset(Geb_Sterb, Jahr < 1946) 
+
+
+
+
+Geb_Sterb45_Plot <- ggplot(Geb_Sterb45)+
+  geom_line(aes(x = Jahr, y = Geburten_Dor),linetype = 1,linewidth=0.5, color = rol1)+
+  geom_line(aes(x=Jahr, y = Todesfälle_Dor),linetype = 1,linewidth=0.5, color = rol5)+
+  geom_line(aes(x = Jahr, y = Geburten_Jahr),linetype = 1,linewidth=0.5, color = rol2)+
+  geom_line(aes(x= Jahr,Todesfälle_Jahr),linetype = 1,linewidth=0.5, color = rol11)+
+  geom_line(aes(x = Jahr, y = Geburten_IT),linetype = 1,linewidth=0.5, color = "#A0522D")+
+  geom_line(aes(x=Jahr,Todesfälle_IT),linetype = 1,linewidth=0.5, color = "#CD6839")+
+  ggtitle("Die natürliche Bevölkerungsentwicklung bis 1945")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Geburten_Dor,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Geburten_Dor),
+                         fill = rol1,
+                         pch=21,
+                         size=0.5,
+                         color=rol1,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Geburten_Jahr,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_Jahr, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Statistisches Jahrbuch Deutscher Gemeinden"), data_id=Geburten_Jahr),
+                         fill = rol2,
+                         pch=21,
+                         size=0.5,
+                         color=rol2,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Geburten_IT,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Geburten_IT),
+                         fill = "#A0522D",
+                         pch=21,
+                         size=0.5,
+                         color="#A0522D",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Todesfälle_Dor,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Todesfälle_Dor),
+                         fill = rol5,
+                         pch=21,
+                         size=0.5,
+                         color=rol5,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Todesfälle_Jahr,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_Jahr, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Statistisches Jahrbuch Deutscher Gemeinden"), data_id=Todesfälle_Jahr),
+                         fill = rol11,
+                         pch=21,
+                         size=0.5,
+                         color=rol11,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Todesfälle_IT,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Todesfälle_IT),
+                         fill = rol17,
+                         pch=21,
+                         size=0.5,
+                         color=rol17,
+                         width=1)+
+  scale_x_continuous(breaks=c(1900, 1910, 1920, 1930, 1940, 1945))+
+  scale_y_continuous(labels = c("2.000", "3.000", "4.000", "5.000", "6.000", "7.000", "8.000", "9.000", "10.000", "11.000"), n.breaks= 10, limits = c(2000, 11000), expand=c(0,0))+
+annotate("text", x = 1900, y = 10800, size = 1.8, label = "Todesfälle (Stat. Jahrbuch)", colour = rol11, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 10500, size = 1.8, label = "Lebendgeborene (Stat. Jahrbuch)", colour = rol2, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 10200, size = 1.8, label = "Lebendgeborene (IT.NRW)", colour = "#A0522D", size = 1.3, fontface = "bold",  hjust = "left")+
+      annotate("text", x = 1900, y = 9900, size = 1.8, label = "Todesfälle (IT. NRW)", colour = "#CD6839", size = 1.3, fontface = "bold",  hjust = "left")+
+annotate("text", x = 1900, y = 9600, size = 1.8, label = "Lebendgeborene (Dortmunder Statistik)", colour = rol1, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1900, y = 9300, size = 1.8, label = "Todesfälle (Dortmunder Statistik)", colour = rol5, size = 1.3, fontface = "bold",  hjust = "left")+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Geb_Sterb45_Plot,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+```
+
+
+
+</p>
+<button type="button" class="collapsebuttonclose" data-toggle="collapse" data-target="#Info-45">Details zur Bevölkerungsentwicklung schließen</button>
+<div id="Info-45" class="collapse">
+</div>
+</div>
+<p>
+
+
+
+
+# 5. Wiederaufbau, industrieller Zenit und Kohlekrise - Die Jahre 1946-1974
+
+In diesem Kapitel werden die Daten zur Entwicklung der Dortmunder Bevölkerung von 1946 bis 1974 analysiert. Das Jahr 1974 bildet den Endpunkt der Betrachtung, da 1975 eine umfassende Reform der Stadtbezirke und Stadtgrenzen erfolgte und somit den geeigneten Ausgangspunkt für das folgende Kapitel darstellt.
+
+Auf Grundlage der vorliegenden Daten zum Bevölkerungsstand Dortmunds lassen sich für den Zeitraum 1946 bis 1974 drei Entwicklungsphasen unterscheiden:
+
+1946–1956: In dieser Phase verzeichnete Dortmund ein massives Bevölkerungswachstum. Die Stadt wuchs jährlich um mehr als 10.000 Personen; den stärksten Zuwachs gab es 1951 mit rund 22.000 zusätzlichen Einwohner_innen. Die Wanderungsdaten als auch die natürliche Bevölkerungsentwicklung verlief stark positiv.
+
+1957–1965: Der jährliche Bevölkerungszuwachs fiel deutlich geringer aus und lag zwischen etwa 2.000 und 5.000 Personen.In dieser Phase wuchs die Bevölkerung Dortmunds durch Geburtenüberschüsse, während die Zeit massiver Bevölkerunggsgewinne durch Zuzug vorbei war.
+
+1966–1974: In diesen Jahren kam es insgesamt zu einem Rückgang der Bevölkerung um rund 22.000 Personen, wobei zwischen 1969 und 1971 ein leichter Anstieg zu verzeichnen war.
+
+In den ersten elf Jahren nach dem Zweiten Weltkrieg wuchs die Bevölkerung Dortmunds – nachdem sie infolge des Krieges auf 441.000 gesunken war – bis 1956 auf knapp 623.000 an. Die unmittelbare Nachkriegszeit war vom Wiederaufbau der städtischen Infrastruktur sowie vom wirtschaftlichen Aufschwung der Dortmunder Industrie geprägt. Die Rückkehr zahlreicher Dortmunder_innen und der Zuzug von Flüchtlingen aus dem sowjetischen Einflussbereich führten zu einem starken Bevölkerungsanstieg und leisteten einen entscheidenden Beitrag zur wirtschaftlichen Regeneration der Stadt (vgl. Högl 1994, S. 461, 487).
+
+Mit der ab 1957 einsetzenden und bis zur Schließung der letzten Dortmunder Zeche im Jahr 1987 anhaltenden Kohlekrise verlor die Stadt hingegen mit dem Steinkohlenbergbau einen ihrer wichtigsten Arbeitgeber (vgl. Högl 1994, S. 480, 498). Gleichzeitig wurden jedoch durch Maßnahmen wie den Bau der Technischen Universität die Grundlagen für Dortmunds Rolle als zentraler Ausbildungsstandort im östlichen Ruhrgebiet gelegt – ein Aspekt, auf den in Kapitel 6. 2. 2. erneut eingegangen wird (vgl. Städteatlas 2017, S. 34–35).
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+df_plot_46_74 <- Bev2 |> dplyr::mutate(
+  Bevölkerung_Amt = ifelse(Jahr_Amt %in% c(1900:1945), NA, Bevölkerung_Amt),
+  Bevölkerung_Amt = ifelse(Jahr_Amt %in% c(1975:2000), NA, Bevölkerung_Amt),
+  Bevölkerung_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1900:1945), NA, Bevölkerung_Jahrbuch),
+  Bevölkerung_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1975:2000), NA, Bevölkerung_Jahrbuch),
+  Bevölkerung_IT_NRW = ifelse(Jahr_IT %in% c(1900:1945), NA, Bevölkerung_IT_NRW),
+  Bevölkerung_IT_NRW = ifelse(Jahr_IT %in% c(1975:2000), NA, Bevölkerung_IT_NRW),
+  Jahr_Amt = ifelse(Jahr_Amt %in% c(1900:1945), NA, Jahr_Amt),
+  Jahr_Amt = ifelse(Jahr_Amt %in% C(1975:2000), NA, Jahr_Amt),
+  Jahr_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1900:1945), NA, Jahr_Jahrbuch),
+  Jahr_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1975:2000), NA, Jahr_Jahrbuch),
+  Jahr_IT = ifelse(Jahr_IT %in% c(1900:1945), NA, Jahr_IT), 
+  Jahr_IT = ifelse(Jahr_IT %in% c(1975:2000), NA, Jahr_IT)) 
+
+
+
+
+
+Plot_46_74 <- ggplot(df_plot_46_74)+
+  geom_line(data = df_plot_46_74,
+            aes(x= Jahr_Amt, y= Bevölkerung_Amt,
+                group = Anmerkung, color = "Bevölkerung_Amt"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+    geom_line(data = df_plot_46_74,
+            aes(x= Jahr_Jahrbuch, y= Bevölkerung_Jahrbuch, color = "Bevölkerung_Jahrbuch"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+  ggtitle("Die Bevölkerung Dortmunds von 1946 bis 1974")+
+  geom_line(data = df_plot_46_74,
+            aes(x= Jahr_IT, y= Bevölkerung_IT_NRW, color = "Bevölkerung_IT_NRW"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+ # guides(color = guide_legend(title = "Quellenbasis:"))+
+ scale_color_manual(values = c("Bevölkerung_Amt" = rol3, "Bevölkerung_Jahrbuch" = rol2, "Bevölkerung_IT_NRW" = rol1))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 10, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=6),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=4))+
+    geom_point_interactive(aes(x=Jahr_Amt, y=Bevölkerung_Amt,
+                             tooltip = paste0("Amt für Statistik und Wahlen Dortmund", "\n", "Jahr: ", Jahr_Amt, "\n", "Bevölkerungsstand: ", format(Bevölkerung_Amt, big.mark = ".", decimal.mark = ","), "\n", Anmerkung), data_id=Bevölkerung_Amt),
+                         pch=21,
+                         color= rol3,
+                         size=0.5,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr_Jahrbuch, y=Bevölkerung_Jahrbuch, 
+                             tooltip = paste0("Stat. Jahrbuch Deutscher Gemeinden/Städte", "\n","Jahr: ", Jahr_Jahrbuch, "\n", "Bevölkerungsstand: ", format(Bevölkerung_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", Anmerkung_Jahrbuch), data_id=Bevölkerung_Jahrbuch),
+                         pch=21,
+                         color= rol2,
+                         size=0.5,
+                         width=1)+
+      geom_point_interactive(aes(x=Jahr_IT, y=Bevölkerung_IT_NRW,
+                             tooltip = paste0("IT. NRW", "\n", "Jahr: ", Jahr_IT, "\n", "Bevölkerungsstand: ", format(Bevölkerung_IT_NRW, big.mark = ".", decimal.mark = ","), "\n"), data_id=Bevölkerung_IT_NRW),
+                         pch=21,
+                         color= rol1,
+                         size=0.5,
+                         width=1)+
+      annotate("text", x = 1957, y = 660000, size = 2, label = "Einsetzende Bergbaukrise", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1957, y = 656000, xend = 1957, yend = 630000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+  #Zechensterben
+    annotate("text", x = 1968, y = 680000, size = 2, label = "Zeit der Zechenschließungen", colour = "black", size = 1.5, fontface = "bold")+
+    annotate("curve", x = 1960, y = 670000, xend = 1974, yend = 670000, curvature = .0, color="black")+ 
+  #Mauerbau
+    annotate("text", x = 1962, y = 590000, size = 2, label = "Bau der Berliner Mauer", colour = "black", size = 1.5, fontface = "bold")+
+  annotate("curve", x = 1961.8, y = 600000, xend = 1961.8, yend = 646000, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+  #Legende
+    annotate("text", x = 1965, y = 436000, size = 2.4, label = "Bevölkerungsstand (Dortmunder Statistik)", colour = rol3, size = 1.3, fontface = "bold",  hjust = "left")+
+  annotate("text", x = 1965, y = 424000, size = 2.4, label = "Bevölkerungsstand (Stat. Jahrbuch)", colour = rol2, size = 1.3, fontface = "bold",  hjust = "left")+
+    annotate("text", x = 1965, y = 412000, size = 2.4, label = "Bevölkerungsstand (IT. NRW)", colour = rol1, size = 1.3, fontface = "bold",  hjust = "left")+
+  scale_y_continuous(labels = c("400.000", "500.000", "600.000", "700.000"), n.breaks = 4, limits = c(400000, 700000), expand = c(0,0))+
+  scale_x_continuous(breaks=c(1946, 1950, 1955,1960, 1965,1970, 1974))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_46_74,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                   #Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+
+```
+## 5.1. Der letzte Dortmunder Babyboom und das Ende des natürlichen Bevölkerungswachstums 
+
+In den ersten zwei Jahrzehnten nach dem Zweiten Weltkrieg verzeichnete Dortmund einen deutlichen Geburtenüberschuss. Diese Entwicklung lässt sich durch drei Faktoren erklären:
+
+In den 1950er- und 1960er-Jahren erreichten die geburtenstarken Jahrgänge von 1934 bis 1941 die Familiengründungsphase.
+
+Ab den 1950er-Jahren setzte eine Phase des wirtschaftlichen Aufschwungs ein, die der Bevölkerung finanzielle Sicherheit verschaffte (vgl. Högl 1994, S. 479).
+
+Nach dem Krieg hatte die weibliche Bevölkerung Dortmunds sowohl bei der Beseitigung der kriegsbedingten Trümmer als auch auf dem Arbeitsmarkt eine zentrale Rolle gespielt. In den 1950er- und 1960er-Jahren kehrte sich diese Entwicklung um: Nach der Währungsreform und der Rückkehr vieler Männer aus der Kriegsgefangenschaft wurden viele Dortmunderinnen zunehmend aus dem Berufsleben verdrängt (vgl. Högl 1985, S. 266, 270).
+
+
+Ende der 1960er- und in den 1970er-Jahren setzte ein erneuter Wandel im Rollenverständnis der Frau in der Bundesrepublik Deutschland ein (vgl. Hinz-Wessels 2025). Die zunehmende Bedeutung beruflicher Tätigkeiten sowie die sexuelle Revolution führten zu einer Verschiebung der Prioritäten in der individuellen Lebensplanung und den Rollenerwartungen, was sich drastisch auf die Geburtenzahlen auswirkte (vgl. Hinz-Wessels 2025a).
+
+
+Aus der folgenden grafischen Darstellung wird ersichtlich, dass die Angaben des statistischen Landesamts bei den Geburten und Sterbefällen über den Angaben der Dortmunder Statistik bzw. des Statistischen Jahrbuchs liegen. In einem Schreiben der Dortmunder Statistik vom 18.12.1951 wird eine Erklärung dafür geboten: Dortmund stehe in keinem Austausch mit den übrigen Kommunen, sodass kein Austausch von Daten stattfände, die eine Berücksichtigung von nicht in Dortmund geborenen Kindern ortsansässiger Mütter  ermöglichen würden (Stadtarchiv Dortmund. Bestand 112, Lfd. Nr. 55). Die Abweichungen seien laut Dortmunder Statistik aber gering. Da sich die vorliegenden Abweichungen von 1957 bis 1973 in der gleichen Größenordnung von wenigen Hundert Geburten und Sterbefällen bewegen, kann für diesen Zeitraum die gleiche Situation vermutet werden. 
+
+```{r}
+
+Geb_Sterb74 <- Geb_Sterb |> dplyr::mutate(
+  Geburten_Dor = ifelse(Jahr %in% c(1900:1945), NA, Geburten_Dor),
+  Geburten_Dor = ifelse(Jahr %in% c(1975:2000), NA, Geburten_Dor),
+  Todesfälle_Dor = ifelse(Jahr %in% c(1900:1945), NA, Todesfälle_Dor),
+  Todesfälle_Dor = ifelse(Jahr %in% c(1975:2000), NA, Todesfälle_Dor),
+    Geburten_Jahr = ifelse(Jahr %in% c(1900:1945), NA, Geburten_Jahr),
+  Geburten_Jahr = ifelse(Jahr %in% c(1975:2000), NA, Geburten_Jahr),
+  Todesfälle_Jahr = ifelse(Jahr %in% c(1900:1945), NA, Todesfälle_Jahr),
+  Todesfälle_Jahr = ifelse(Jahr %in% c(1975:2000), NA, Todesfälle_Jahr),
+    Geburten_IT = ifelse(Jahr %in% c(1900:1945), NA, Geburten_IT),
+  Geburten_IT = ifelse(Jahr %in% c(1975:2000), NA, Geburten_IT),
+  Todesfälle_IT = ifelse(Jahr %in% c(1900:1945), NA, Todesfälle_IT),
+  Todesfälle_IT = ifelse(Jahr %in% c(1975:2000), NA, Todesfälle_IT),
+  Jahr = ifelse(Jahr %in% c(1900:1945), NA, Jahr), 
+  Jahr = ifelse(Jahr %in% c(1975:2000), NA, Jahr)) 
+
+
+Geb_Ge_Plot74 <- ggplot(Geb_Sterb74)+
+  geom_line(aes(x = Jahr, y = Geburten_Dor),linetype = 1,linewidth=0.5, color = rol1)+
+  geom_line(aes(x=Jahr, y = Todesfälle_Dor),linetype = 1,linewidth=0.5, color = rol5)+
+  geom_line(aes(x = Jahr, y = Geburten_Jahr),linetype = 1,linewidth=0.5, color = rol2)+
+  geom_line(aes(x= Jahr,Todesfälle_Jahr),linetype = 1,linewidth=0.5, color = rol11)+
+  geom_line(aes(x = Jahr, y = Geburten_IT),linetype = 1,linewidth=0.5, color = "#A0522D")+
+  geom_line(aes(x=Jahr,Todesfälle_IT),linetype = 1,linewidth=0.5, color = "#CD6839")+
+  ggtitle("Die Geburten und Sterbefälle von 1946 bis 1974")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Geburten_Dor,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Geburten_Dor),
+                         fill = rol1,
+                         pch=21,
+                         size=0.5,
+                         color=rol1,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Geburten_Jahr,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_Jahr, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Statistisches Jahrbuch Deutscher Gemeinden"), data_id=Geburten_Jahr),
+                         fill = rol2,
+                         pch=21,
+                         size=0.5,
+                         color=rol2,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Geburten_IT,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Geburten_IT),
+                         fill = "#A0522D",
+                         pch=21,
+                         size=0.5,
+                         color="#A0522D",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Todesfälle_Dor,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Todesfälle_Dor),
+                         fill = rol5,
+                         pch=21,
+                         size=0.5,
+                         color=rol5,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Todesfälle_Jahr,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_Jahr, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Statistisches Jahrbuch Deutscher Gemeinden"), data_id=Todesfälle_Jahr),
+                         fill = rol11,
+                         pch=21,
+                         size=0.5,
+                         color=rol11,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Todesfälle_IT,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Todesfälle_IT),
+                         fill = "#CD6839",
+                         pch=21,
+                         size=0.5,
+                         color="#CD6839",
+                         width=1)+
+  annotate("text", x = 1946, y = 9500, size = 2.2, label = "Geburten (Dortmunder Statistik)", colour = rol1, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1946, y = 9200, size = 2.2, label = "Todesfälle (Dortmunder Statistik)", colour = rol5, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1946, y = 8900, size = 2.2, label = "Geburten (Stat. Jahrbuch)", colour = rol2, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1946, y = 8600, size = 2.2, label = "Todesfälle (Stat. Jahrbuch)", colour = rol11, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1946, y = 8300, size = 2.2, label = "Geburten (IT. NRW)", colour = "#A0522D", size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1946, y = 8000, size = 2.2, label = "Todesfälle (IT. NRW)", colour = "#CD6839", size = 1.5, fontface = "bold", hjust = "left")+
+  # Babyboom
+  annotate("text", x = 1956, y = 11800, size = 2, label = "Baby-Boom", colour = "black", size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1951, y = 11500, xend = 1969, yend = 11500, curvature = .0, color="black")+
+  scale_x_continuous(breaks=c(1950, 1960, 1970, 1980, 1990, 2000))+
+  scale_y_continuous(labels = c("4.000", "5.000", "6.000", "7.000", "8.000", "9.000", "10.000", "11.000", "12.000"), n.breaks= 9, limits = c(4000, 12000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Geb_Ge_Plot74,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+
+
+
+## 5.2. Starkes Wachstum durch Zuzug bis 1958 und anschließende Stagnation bis 1974
+
+1958 endete die Phase stark positiver Wanderungssalden in der Stadt Dortmund. Die vorliegenden Daten spiegeln dabei das wirtschaftliche Klima der Stadt wider. Mit dem Ende der lukrativen Phase des Kohlebergbaus gegen Ende der 1950er-Jahre sanken auch die Zahlen der jährlichen Zuzügler. Der starke Anstieg der Fortzüge in den Jahren 1966 und 1967 korreliert mit den zahlreichen Zechenschließungen in den Jahren 1965 und 1966 (vgl. Högl 1994, S. 480).
+
+Zur Verdeutlichung der wirtschaftlichen Herausforderungen Dortmunds in den 1960er-Jahren, die aus dem Ende der lukrativen Phase des Kohlebergbaus resultierten, liefert eine Publikation der Dortmunder Statistik aus dem Jahr 1960 wichtige Hinweise (Dortmunder Statistik 1960). Demnach waren zum Stand 30.09.1959 47.725 Personen – 17,3 % aller Dortmunder Beschäftigten – im Bergbau tätig.
+
+Die Zechenschließungen erfolgten wie folgt:
+
+1960: Zeche Fürst Hardenberg
+
+1962: Zeche Oespel
+
+1963: Zechen Gottessegen und Gustav
+
+1965: Zechen Gute Hoffnung III und VI
+
+1966: Zechen Kaiserstuhl und Zollern
+
+1967: Zechen Adolf von Hansemann und Justus
+
+1971: Zeche Germania
+
+Bis 1974 waren von ursprünglich 14 Zechen (Stand 1960) noch drei in Betrieb (vgl. Högl 1994, S. 480f).
+
+Der massive Verlust von Arbeitsplätzen im Bergbausektor konnte durch die weiterhin lukrative Eisen- und Stahlerzeugende Industrie bis in die 1970er-Jahre hinein aufgefangen werden. Der erhöhte Arbeitskräftebedarf dieser Industrie während der besonders produktiven Jahre 1969–1971 spiegelt sich deutlich in den gestiegenen Zuzugzahlen dieser Jahre wider.
+
+Aus den Angaben der Dortmunder Statistik wird zudem ersichtlich, dass insbesondere in den 1950er-Jahren Probleme bei der Ermittlung der Fortzüge bestanden. Eine Erklärung für die abweichenden Angaben wird in Schreiben 061/131 aus dem Jahr 1955 geboten (Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 55). Darin schreibt der Leiter der Dortmunder Statistik, dass die im Vergleich zum statistischen Landesamt um 5 000 Einwohner geringere Fortschreibung des Bevölkerungsstands der Dortmunder Statistik auf die Kategorie "Verzogen, wohin unbekannt" zurückzuführen sei (Stadtarchiv Dortmund. Bestand 112, Lfd. NR.: 55). Die Korrektur der Bevölkerungdaten ist somit darauf zurückzuführen, dass die Zielorte der unter diese Kategorie gefallenen Personen geklärt werden konnten oder im Fall nachträglich nach unten korrigierter Zahlen wie in den Jahren 1959 bis 1960 festgestellt wurde, dass Umzüge innerhalb der Kommune als Fortzug kategorisiert wurden (Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 55).  
+
+Auf eine separate Visualisierung der Angaben des Statistischen Jahrbuchs Deutscher Gemeinden über das Jahr 1951 hinaus wurde in der folgenden Abbildung verzichtet, da diese mit den Angaben der jährlichen Veröffentlichungen „Die Dortmunder Bevölkerung im Jahre …“ der Dortmunder Statistik übereinstimmen. 
+
+
+```{r}
+
+Zu_Fort_short_74 <- Zu_Fort2 |> dplyr::mutate(
+  Jahr = ifelse(Jahr %in% c(1900:1945), NA, Jahr), 
+  Jahr = ifelse(Jahr %in% c(1975:2000), NA, Jahr),
+  Zuzüge_Jahrbuch = ifelse(Jahr %in% c(1900:1945), NA, Zuzüge_Jahrbuch),
+  Zuzüge_Jahrbuch = ifelse(Jahr %in% c(1952:2000), NA, Zuzüge_Jahrbuch),
+  Fortzüge_Jahrbuch = ifelse(Jahr %in% c(1900:1945), NA, Fortzüge_Jahrbuch),
+  Fortzüge_Jahrbuch = ifelse(Jahr %in% c(1952:2000), NA, Fortzüge_Jahrbuch))
+
+#Hier wird der Datensatz so geändert, dass aus den zuletzt veröffentlichten Daten der Dortmunder Statistik eine Linie in ggplot bildbar wird. In "test wird die höchste Zahl aus "Quelle Dortmund entnommen. Bei max_version wird ein neuer Datensatz angelegt, wob für jedes Jahr die höchste aus den Quellen entnommene Zahl angegeben wird. in test_vers werden test und max_version dann miteinander verbunden. Letzter schritt in test_vers2, wo eine weitere Spalte angelegt wird ("Version_Diagramm"). Dort steht 1 für die letzte und somit gewünschte Angabe, 0 für die älteren.  Version_Diagramm dient dann bei der einteilung der Linien in ggplot dazu, durch den Einsatz von dplyr::filter(Version_Diagramm == 1) die gewünschte Linie zu Formen.
+
+
+# Höchste Zahl aus Quellenangabe extrahieren als neue Spalte
+Zu_Fort_short_74 <- Zu_Fort_short_74 |> 
+  mutate(
+    Quelle_Version = str_extract(Quelle_Dortmund, "\\d+"),
+    Quelle_Version = as.numeric(Quelle_Version)
+  )
+# Neuer Datensatz, welcher für jedes Jahr die höchste aus der Quellenangabe extrahierte Zahl angbit
+max_version <- Zu_Fort_short_74 |> group_by(Jahr) |> 
+  summarise(
+    Version_max = max(Quelle_Version, na.rm = TRUE)
+  )
+# beide Datensätze werden verbunden
+Zu_Fort_short_74 <- Zu_Fort_short_74 |> left_join(max_version |> dplyr::filter(!is.na(Jahr)))
+# weitere Spalte im Datensatz angelegt durch ifelse. Dabei folgender Ansatz: Wenn die Angabe für Quelle_Version und für Version_Max gleich sind, also die höchste Zahl, dann wird in neuer Spalte eine 1 eingetragen, andernfalls eine 0
+
+Zu_Fort_short_74 <- Zu_Fort_short_74 |> mutate(Finale_Daten = ifelse(Quelle_Version == Version_max, 1, 0))
+
+
+
+Plot_Zu_Fort_short_74 <- ggplot(Zu_Fort_short_74)+
+  geom_line(aes(x = Jahr, y = Zuzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color = "#CDAD00")+
+  geom_line( data = Zu_Fort_short_74 |> dplyr::filter(Finale_Daten == 1), aes(x = Jahr, y = Fortzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color= "#FFD700")+
+  geom_line(aes(x = Jahr, y = Zuzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#104E8B")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#1E90FF")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#1E90FF")+
+  ggtitle("Zu- und Fortzüge Dortmunds von 1948 bis 1974")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Zuzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Zuzüge_Amt_Dortmund),
+                         fill = "#CDAD00",
+                         pch=21,
+                         size=0.5,
+                         color="#CDAD00",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", format(Quelle_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Fortzüge_Amt_Dortmund),
+                         fill = "#FFD700",
+                         pch=21,
+                         size=0.5,
+                         color="#FFD700",
+                         width=1)+
+      geom_point_interactive(aes(x=Jahr, y=Zuzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Zuzüge_Jahrbuch),
+                         fill = "#104E8B",
+                         pch=21,
+                         size=0.5,
+                         color= "#104E8B",
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Fortzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Fortzüge_Jahrbuch),
+                         fill = "#1E90FF",
+                         pch=21,
+                         size=0.5,
+                         color="#1E90FF",
+                         width=1)+
+  scale_x_continuous(breaks=c(1946, 1950, 1955, 1960, 1965, 1970, 1974))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000", "30.000", "40.000", "50.000"), n.breaks= 6, limits = c(0, 50000), expand=c(0,0))+
+  annotate("text", x = 1949, y = 8000, size = 2.3, label = "Fortzüge (Stat. Jahrbuch)", colour = "#1E90FF", size = 1.5, fontface = "bold")+
+  annotate("text", x = 1949, y = 23000, size = 2.3, label = "Zuzüge (Stat. Jahrbuch)", colour = "#104E8B", size = 1.5, fontface = "bold")+
+  annotate("text", x = 1953, y = 42500, size = 2.3, label = "Zuzüge (Dortmunder Statistik)", colour = "#CDAD00", size = 1.5, fontface = "bold")+
+  annotate("text", x = 1957, y = 17000, size = 2.3, label = "Fortzüge (Dortmunder Statistik)", colour = "#FFD700", size = 1.5, fontface = "bold")+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Plot_Zu_Fort_short_74,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+<button type="button" class="collapsebutton" data-toggle="collapse" data-target="#Info-74">Mehr Details zu den Zu- und Fortzugsströmen</button>
+<div id="Info-74" class="collapse">
+
+<p>
+
+
+## {.tabset}
+
+### 5.2.1. Die Detaillierten Angaben der Zu- und Fortzugsströme der Dortmunder Statistik
+
+Für den Zeitraum von 1958 beginnend bieten die Publikationen der Dortmunder Statistik detailliertere Angaben zur Wanderungsstatistik der Dortmunder Bevölkerung. In den folgenden Abbildungen wird der Fokus auf die drei größten Zu- und Fortzugströme gelegt (vgl.: Dortmunder Statistik. Sonderheft 8f):
+
+1.	Zu-/Fortzüge aus/nach NRW
+
+2.	Zu-/Fortzüge aus/in sonstige(n) Bundesländern
+
+3.	Zu-/Fortzüge aus/ins Ausland
+
+In den gesichteten Publikationen der Dortmunder Statistik werden darüber hinaus folgende Zu- und Fortzugsströme aufgeführt (vgl.: Dortmunder Statistik. Sonderheft 8f):
+
+1.	Zu-/Fortzug DDR
+
+2.	Zu-/Fortzug Berlin-Ost
+
+3.	Zu-/Fortzug Berlin-West
+
+4.	Zu-/Fortzug aus den annektierten Gebieten östlich der Order
+
+5.	Unbekannt
+
+6.	Kriegsheimkehrer
+
+7.	Schiff
+
+Da die Größenordnungen dieser Variablen im Vergleich zu den drei Hauptvariablen deutlich geringer ausfallen, werden sie in der grafischen Darstellung unter der Kategorie „Sonstige“ zusammengefasst.
+
+
+### 5.2.2. Wachsende Bedeutung der Migration aus dem Ausland und sinkende Zuwanderung aus dem deutschen Raum - Die Zuzüge von 1958-1974
+
+Aus den vorliegenden Daten wird deutlich, dass die größte Zuwanderergruppe aus NRW stammte. Die Zahl der Zugewanderten aus Westfalen war in jedem Jahr zwischen 1958 und 1974 höher als die der Zugewanderten aus dem Ausland und aus den übrigen Bundesländern zusammen.
+
+Während die Zahl der zugezogenen Dortmunder_innen aus NRW und den anderen Bundesländern im betrachteten Zeitraum eher abnahm, stieg die Zahl der jährlich Zugezogenen aus dem Ausland. 1958 machten Zugezogene aus dem Ausland mit 1.500 Personen im Vergleich zu 5.000 aus den übrigen Bundesländern und 15.000 aus NRW nur einen kleinen Anteil aus. In den 1960er-Jahren nahm die Zahl der Zugezogenen aus dem Ausland zu und blieb – mit Ausnahme der Jahre 1965 bis 1968 – auf einem relativ konstanten Niveau. In den meisten Jahren überstieg sie schließlich die Zahl der Zugezogenen aus den übrigen Bundesländern, sodass das Ausland zur zweitwichtigsten Herkunftsregion wurde.
+
+Der plötzliche Anstieg in den 1960er-Jahren deutet darauf hin, dass diese Entwicklung mit den sogenannten „Anwerbeabkommen“ in Verbindung steht. Mit dem Baubeginn der Berliner Mauer am 13. August 1961 endete der Zustrom von Einwanderern aus dem deutschsprachigen Raum. Um den hohen Arbeitskräftebedarf der Wirtschaft zu decken, wurden in den 1960er-Jahren Anwerbeabkommen mit Ländern wie der Türkei, Griechenland, Italien und Spanien geschlossen (vgl. Sternberg 2012, S. 25–26). Diese Abkommen ermöglichten Menschen aus diesen Staaten eine vereinfachte Einreise und Anstellung in der Bundesrepublik Deutschland.
+
+
+```{r}
+
+Zustrome_74 <- Zu_Fort_Data |> subset(Jahr >= 1958 & Jahr <1975)
+Zustrome_74$Fortzüge_Amt_Dortmund <- NULL
+Zustrome_74$Fortzüge_NRW<- NULL
+Zustrome_74$Fortzüge_Bundesländer<- NULL
+Zustrome_74$Fortzüge_Osten<- NULL
+Zustrome_74$Fortzüge_Ausland<- NULL
+Zustrome_74$Fortzüge_Jahrbuch<- NULL
+Zustrome_74$Zuzüge_Jahrbuch<- NULL
+Zustrome_74$Zuzüge_IT_NRW<- NULL
+Zustrome_74$Fortzüge_IT_NRW<- NULL
+Zustrome_74$Fortzüge_IT_NRW<- NULL
+Zustrome_74$Zuzüge_Sowj._Einflussbereich<- NULL
+Zustrome_74$Quelle_IT<- NULL
+Zustrome_74$Quelle_Jahrbuch<- NULL
+Zustrome_74$Quelle_IT<- NULL
+Zustrome_74$Quelle_Dortmund<- NULL
+
+
+ Zustrome_74$Sonstige <- Zustrome_74$Zuzüge_Amt_Dortmund -  Zustrome_74$Zuzüge_NRW - Zustrome_74$Zuzüge_Bundesländer - Zustrome_74$Zuzüge_Ausland
+ 
+ Zustrome_74$Zuzüge_Amt_Dortmund <- NULL
+
+Zustrome_74 <- pivot_longer(Zustrome_74, cols = c(2:5),
+                            names_to = "Zuzug_Art",
+                            values_to = "Anzahl")
+Zustrome_74 <- na.omit(Zustrome_74)
+
+Zustrome_74 <- mutate(Zustrome_74,
+  Zuzug_Art = case_when(Zuzug_Art == "Zuzüge_Amt_Dortmund" ~ "Alle Zuzüge:",
+                   Zuzug_Art == "Zuzüge_NRW" ~ "Zuzüge NRW:",
+                   Zuzug_Art == "Zuzüge_Bundesländer" ~ "Zuzüge Bundesländer:",
+                   Zuzug_Art == "Zuzüge_Ausland" ~ "Zuzüge Ausland:",
+                   Zuzug_Art == "Sonstige" ~ "Sonstige:")
+)
+
+
+Zustrom_74_Plot <- ggplot(Zustrome_74)+
+  geom_line(aes(x = Jahr, y = Anzahl, color = Zuzug_Art),linetype = 1,linewidth=0.75, show.legend = FALSE)+
+  ggtitle("Die wichtigsten Zuzugströme")+
+  scale_color_manual(values = c("Alle Zuzüge:" = rol3, "Zuzüge NRW:" = rol1, "Zuzüge Bundesländer:" = rol2, "Zuzüge Ausland:" = rol17, "Sonstige:" = rol15))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "none",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Anzahl, fill = Zuzug_Art, color = Zuzug_Art,
+                             tooltip = paste0(Jahr, "\n", format(Zuzug_Art, big.mark = ".", decimal.mark = ","), format(Anzahl, big.mark = ".", decimal.mark = ",")), data_id=Anzahl),
+                         pch=21,
+                         size=0.5,
+                         width=1)+
+  scale_fill_manual(values = c("Alle Zuzüge:" = rol3, "Zuzüge NRW:" = rol1, "Zuzüge Bundesländer:" = rol2, "Zuzüge Ausland:" = rol17, "Sonstige:" = rol15))+
+  scale_x_continuous(breaks=c(1955, 1960, 1965, 1970, 1974))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000"), n.breaks= 3, limits = c(0, 20000), expand=c(0,0))+
+  annotate("text", x = 1958, y = 15900, size = 1.8, label = "Zuzüge NRW", colour = rol1, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1959, y = 6200, size = 1.8, label = "Zuzüge Bundesländer", colour = rol2, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1958.3, y = 2000, size = 1.8, label = "Zuzüge Ausland", colour = rol17, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1959, y = 3500, size = 1.8, label = "Sonst.", colour = rol15, size = 1.5, fontface = "bold")+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Zustrom_74_Plot,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+```
+
+### 5.2.3. Die Fortgezogenen und ihre Ziele
+
+Der Anstieg der Fortzugszahlen bei gleichzeitig stark rückläufigen Zuzügen schien die Stadtverwaltung zu beunruhigen, sodass das Statistische Amt Dortmund beauftragt wurde, die Ursachen der Fortzüge zu untersuchen (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 50). Hervorzuheben ist, dass die Fortzugzahlen, welche die Stadt zur Durchführung der folgenden Befragung veranlassten, in späteren Publikationen nach Durchführung der Befragung deutlich nach unten korrigiert wurden, wie für die Angaben der Jahre 1957 bis 1960 zu erkennen ist. Wenige Jahre später wurde den Beteiligten somit gezeigt, dass der zugrundeliegende Anlass dieser Befragung gar nicht gegeben war.  
+
+Die Untersuchung, die eine Befragung der Fortgezogenen der Monate März bis Juni 1960 umfasste und deren Ergebnisse in einem Schreiben der Dortmunder Statistik vom 21.07.1960 zusammengefasst wurden, brachte interessante Erkenntnisse hervor.
+
+Zum einen konnte für diesen Zeitraum festgestellt werden, dass die Zahl der fortgezogenen Bergleute mit einem Anteil von 12,3% im Vergleich zu den Vorjahren nicht erhöht war, sondern den jährlichen Durchschnittswerten der fortgezogenen männlichen Arbeitnehmer entsprach (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 50). Eine verstärkte Abwanderung von Bergleuten infolge der einsetzenden Kohlekrise und des damit verbundenen Stellenabbaus lässt sich somit für die zweite Hälfte der 1950er-Jahre statistisch nicht belegen.
+
+Bei Betrachtung beider Geschlechter spielt der Anteil der fortgezogenen Bergleute mit 9% eine noch geringere Rolle. Demgegenüber standen 39,8% der Fortgezogenen, die als Beamte oder im Dienstleistungssektor tätig waren (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 50). Die größte Altersgruppe der Fortgezogenen waren die 15- bis 25-Jährigen: Ihr Anteil betrug bei den Männern 33%, bei den Frauen 58% (Stadtarchiv Dortmund, Bestand 112, Lfd. Nr. 50).
+
+Dass ein Fortzug ehemals im Bergbau beschäftigter Arbeitnehmer auch nach 1960 ausblieb, erscheint jedoch unwahrscheinlich. Darauf deuten insbesondere die in den Jahren 1966 und 1967 gestiegenen Fortzugszahlen ins Ausland hin. Das Aufenthaltsrecht der im Rahmen des Anwerbeabkommens angeworbenen ausländischen Arbeitnehmer war an ihren Arbeitsvertrag gebunden (vgl. Sternberg, 2012, S. 25–26). Der Anstieg der Fortzugszahlen in den Jahren besonders schwerwiegender Zechenschließungen deutet darauf hin, dass infolge der Entlassungen viele Arbeitnehmer aus den Anwerbeländern in ihre Herkunftsländer zurückkehrten. Da innerhalb desselben Zeitraums auch ein Anstieg der Fortzüge innerhalb NRWs und in andere Bundesländer erkennbar ist, liegt die Vermutung nahe, dass diese Zunahme ebenfalls auf die Entlassungen infolge der Zechenschließungen zurückzuführen ist.
+
+Im Vergleich zu anderen großen Städten der BRD war Dortmund in deutlich geringerem Ausmaß von der ersten Suburbanisierungswelle der 1960er und 70er-Jahre betroffen. Der Grund für den relativ geringen Verlust durch Abwanderung ins Umland liegt in der großen Fläche Dortmunds und dem dadurch verfügbaren Raum für Grünanlagen und Wohnungsbau (Dortmunder Statistik, 1969a, S. 8). Durch die systematische Erschließung der äußeren Stadtbezirke und den Bau neuer Wohnanlagen in den 1960er-Jahren konnte der damalige Trend zur Suburbanisierung innerhalb der Stadt aufgefangen werden (Dortmunder Statistik, 1976a, S. 66). Zudem führte der Bevölkerungsrückgang ab 1966 zu einer Entspannung auf dem Dortmunder Wohnungsmarkt, wodurch die Anreize zum Verbleib in der Stadt durch eine bessere Wohnungsauswahl zusätzlich erhöht wurden.
+
+
+```{r}
+
+
+Fort_short_74 <- Zu_Fort2 |> subset(Jahr >= 1958 & Jahr <1975)
+
+#Hier wird der Datensatz so geändert, dass aus den zuletzt veröffentlichten Daten der Dortmunder Statistik eine Linie in ggplot bildbar wird. In "test wird die höchste Zahl aus "Quelle Dortmund entnommen. Bei max_version wird ein neuer Datensatz angelegt, wob für jedes Jahr die höchste aus den Quellen entnommene Zahl angegeben wird. in test_vers werden test und max_version dann miteinander verbunden. Letzter schritt in test_vers2, wo eine weitere Spalte angelegt wird ("Version_Diagramm"). Dort steht 1 für die letzte und somit gewünschte Angabe, 0 für die älteren.  Version_Diagramm dient dann bei der einteilung der Linien in ggplot dazu, durch den Einsatz von dplyr::filter(Version_Diagramm == 1) die gewünschte Linie zu Formen.
+
+
+# Höchste Zahl aus Quellenangabe extrahieren als neue Spalte
+Fort_short_74 <- Fort_short_74 |> 
+  mutate(
+    Quelle_Version = str_extract(Quelle_Dortmund, "\\d+"),
+    Quelle_Version = as.numeric(Quelle_Version)
+  )
+# Neuer Datensatz, welcher für jedes Jahr die höchste aus der Quellenangabe extrahierte Zahl angbit
+max_version <- Fort_short_74 |> group_by(Jahr) |> 
+  summarise(
+    Version_max = max(Quelle_Version, na.rm = TRUE)
+  )
+
+
+# beide Datensätze werden verbunden
+Fort_short_74 <- Fort_short_74 |> left_join(max_version |> dplyr::filter(!is.na(Jahr)))
+# weitere Spalte im Datensatz angelegt durch ifelse. Dabei folgender Ansatz: Wenn die Angabe für Quelle_Version und für Version_Max gleich sind, also die höchste Zahl, dann wird in neuer Spalte eine 1 eingetragen, andernfalls eine 0
+
+Fort_short_74 <- Fort_short_74 |> mutate(Finale_Daten = ifelse(Quelle_Version == Version_max, 1, 0))
+
+Fort_short_74$Zuzüge_Amt_Dortmund <- NULL
+Fort_short_74$Zuzüge_NRW <- NULL
+Fort_short_74$Zuzüge_Bundesländer <- NULL
+Fort_short_74$Zuzüge_Sowj._Einflussbereich <- NULL
+Fort_short_74$Zuzüge_Ausland <- NULL
+Fort_short_74$Zuzüge_Jahrbuch <- NULL
+Fort_short_74$Zuzüge_IT_NRW <- NULL
+Fort_short_74$Fortzüge_Osten <- NULL
+Fort_short_74$Quelle_Jahrbuch <- NULL
+Fort_short_74$Quelle_IT <- NULL
+
+ Fort_short_74$Sonstige <- Fort_short_74$Fortzüge_Amt_Dortmund -  Fort_short_74$Fortzüge_NRW - Fort_short_74$Fortzüge_Bundesländer - Fort_short_74$Fortzüge_Ausland
+
+Fort_short_74$Fortzüge_IT_NRW <- NULL
+
+
+
+Plot_Fort_short_74 <- 
+  ggplot(Fort_short_74)+
+  geom_line(data = Fort_short_74 |> dplyr::filter(!is.na(Fortzüge_NRW)),aes(x = Jahr, y = Fortzüge_NRW),linetype = 1,linewidth=0.75, color= rol1)+
+  geom_line(data = Fort_short_74 |> dplyr::filter(!is.na(Fortzüge_Bundesländer)),aes(x = Jahr, y = Fortzüge_Bundesländer),linetype = 1,linewidth=0.75, color= rol2)+
+  geom_line(data = Fort_short_74 |> dplyr::filter(!is.na(Fortzüge_Ausland)),aes(x = Jahr, y = Fortzüge_Ausland),linetype = 1,linewidth=0.75, color= rol17)+
+  geom_line(data = Fort_short_74 |> dplyr::filter(!is.na(Sonstige)),aes(x = Jahr, y = Sonstige),linetype = 1,linewidth=0.75, color= rol15)+
+  ggtitle("Die Ziele der Fortgezogenen von 1958-1974")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_NRW,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge NRW: ", format(Fortzüge_NRW, big.mark = ".", decimal.mark = ","), "\n",  "Quelle: Dortmunder Statistik"), data_id=Fortzüge_NRW),
+                         fill = rol1,
+                         pch=21,
+                         size=0.5,
+                         color=rol1,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Bundesländer,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge Bundesländer: ", format(Fortzüge_Bundesländer, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Fortzüge_Bundesländer),
+                         fill = rol2,
+                         pch=21,
+                         size=0.5,
+                         color=rol2,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Ausland,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge Ausland: ", format(Fortzüge_Ausland, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Fortzüge_Ausland),
+                         fill = rol17,
+                         pch=21,
+                         size=0.5,
+                         color=rol17,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Sonstige,
+                             tooltip = paste0(Jahr, "\n", "Sonstige: ", format(Sonstige, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Sonstige),
+                         fill = rol15,
+                         pch=21,
+                         size=0.5,
+                         color=rol15,
+                         width=1)+
+  scale_x_continuous(breaks=c(1946, 1950, 1955, 1960, 1965, 1970, 1974))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000"), n.breaks= 3, limits = c(0, 20000), expand=c(0,0))+
+  annotate("text", x = 1959, y = 26000, size = 1.8, label = "Fortzüge Insgesamt", colour = rol3, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1959, y = 17000, size = 1.8, label = "Fortzüge NRW", colour = rol1, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1959, y = 9500, size = 1.8, label = "Fortzüge Bundesländer", colour = rol2, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1958.7, y = 2000, size = 1.8, label = "Fortzüge Ausland", colour = rol17, size = 1.5, fontface = "bold")+
+    annotate("text", x = 1960, y = 3700, size = 1.8, label = "Sonst.", colour = rol15, size = 1.5, fontface = "bold")+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_Fort_short_74,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+
+
+
+
+</p>
+<button type="button" class="collapsebuttonclose" data-toggle="collapse" data-target="#Info-74">Details zu den Zu- und Fortzugsströmen schließen</button>
+<div id="Info-74" class="collapse">
+</div>
+</div>
+<p>
+
+
+
+# 6. Dortmund und das letzte Vierteljahrhundert
+
+Die Bevölkerungsentwicklung Dortmunds im letzten Viertel des 20. Jahrhunderts lässt sich in drei Phasen unterteilen. Auf eine Phase des Bevölkerungsrückgangs und zeitweiliger Stagnation bis einschließlich 1987 folgte von 1988 bis 1993 ein deutlicher Zuwachs der Einwohnerzahl, während in der dritten Phase von 1994 bis 2000 erneut ein Rückgang zu verzeichnen war.
+
+Innerhalb der ersten Phase, die durch die Schließung der letzten Dortmunder Zechen sowie den Verlust der Hoesch-Westfalenhütte als größtem Arbeitgeber der Stadt von erheblichen wirtschaftlichen Problemen geprägt war, ist für den Zeitraum 1978 bis einschließlich 1981 eine Stagnation des Bevölkerungsstands erkennbar (Högl 1994, S. 498, 502). Ursache hierfür waren ein gleichzeitiger Anstieg der jährlichen Zuzüge aus dem Ausland sowie eine Zunahme der Geburten. Mit dem ab 1982 einsetzenden Rückgang der Zuzüge aus dem Ausland setzte sich der Bevölkerungsrückgang bis 1987 fort.
+
+Der Anstieg der Dortmunder Bevölkerung von 573.000 Einwohner_innen im Jahr 1987 auf knapp 611.000 im Jahr 1991 lässt sich durch zeitlich überlappende Zuwanderungsströme aus unterschiedlichen Herkunftsregionen erklären, insbesondere aus Osteuropa, der DDR bzw. den neuen Bundesländern sowie infolge des Jugoslawienkriegs. Darüber hinaus verzeichnete Dortmund zwischen 1986 und 1997 einen Anstieg der Geburten, der auf die Generation der Babyboomer zurückzuführen ist, die sich in diesem Zeitraum in der Phase der Familiengründung befand.
+
+In der letzten Phase von 1994 bis 2000 ging die Bevölkerung Dortmunds erneut zurück, was vor allem auf steigende Fortzüge innerhalb Nordrhein-Westfalens sowie in andere Bundesländer zurückzuführen ist. Gleichzeitig zeigte sich die wachsende Bedeutung der Stadt als Ausbildungsstandort im östlichen Ruhrgebiet, da Dortmund in diesem Zeitraum bei der jungen Bevölkerung (16-28 Jahre) positive Wanderungssalden verzeichnete, während bei allen anderen Altergruppen negative Salden für die Jahre 1998-2000 verzeichnet wurden (Dortmunder Statistik 2001, S. 6).
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+df_plot_20 <- Bev2 |> dplyr::mutate(
+  Bevölkerung_Amt = ifelse(Jahr_Amt %in% c(1900:1974), NA, Bevölkerung_Amt),
+  Bevölkerung_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1900:1974), NA, Bevölkerung_Jahrbuch),
+  Bevölkerung_IT_NRW = ifelse(Jahr_IT %in% c(1900:1974), NA, Bevölkerung_IT_NRW),
+  Jahr_Amt = ifelse(Jahr_Amt %in% c(1900:1974), NA, Jahr_Amt),
+  Jahr_Jahrbuch = ifelse(Jahr_Jahrbuch %in% c(1900:1974), NA, Jahr_Jahrbuch),
+  Bevölkerung_IT_NRW = ifelse(Jahr_IT %in% c(1900:1974), NA, Bevölkerung_IT_NRW),
+  Jahr_IT = ifelse(Jahr_IT %in% c(1900:1974), NA, Jahr_IT)) 
+
+
+
+
+
+Plot_20 <- ggplot(df_plot_20)+
+  geom_line(data = df_plot_20,
+            aes(x= Jahr_Amt, y= Bevölkerung_Amt,
+                group = Anmerkung, color = "Bevölkerung_Amt"), linetype = 1,linewidth=0.7, show.legend = FALSE)+
+  geom_line(data = df_plot_20,
+            aes(x= Jahr_IT, y= Bevölkerung_IT_NRW, color = "Bevölkerung_IT_NRW"), linetype = 1,linewidth=0.7, show.legend = FALSE)+  
+  ggtitle("Die Bevölkerung Dortmunds von 1975 bis 2000")+
+ # guides(color = guide_legend(title = "Quellenbasis:"))+
+ scale_color_manual(values = c("Bevölkerung_Amt" = rol3, "Bevölkerung_Jahrbuch" = rol2, "Bevölkerung_IT_NRW" = rol1))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 10, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=6),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=4))+
+    geom_point_interactive(aes(x=Jahr_Amt, y=Bevölkerung_Amt,
+                             tooltip = paste0("Amt für Statistik und Wahlen Dortmund", "\n", "Jahr: ", Jahr_Amt, "\n", "Bevölkerungsstand: ", format(Bevölkerung_Amt, big.mark = ".", decimal.mark = ","), "\n", Anmerkung), data_id=Bevölkerung_Amt),
+                         pch=21,
+                         color= rol3,
+                         size=0.5,
+                         width=1)+
+      geom_point_interactive(aes(x=Jahr_IT, y=Bevölkerung_IT_NRW,
+                             tooltip = paste0("IT. NRW", "\n", "Jahr: ", Jahr_IT, "\n", "Bevölkerungsstand: ", format(Bevölkerung_IT_NRW, big.mark = ".", decimal.mark = ","), "\n"), data_id=Bevölkerung_IT_NRW),
+                         pch=21,
+                         color= rol1,
+                         size=0.5,
+                         width=1)+
+  #Legende
+  annotate("text", x = 1975, y = 520000, size = 2.5, label = "Bevölkerungsstand (Dortmunder Statistik)", colour = rol3, size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975, y = 510000, size = 2.5, label = "Bevölkerungsstand (Stat. Jahrbuch / IT. NRW)", colour = rol1, size = 1.3, fontface = "bold", hjust = "left")+
+  #Zechenschließungen
+    annotate("text", x = 1978, y = 685000, size = 2.3, label = "Zeit der Zechenschließungen", colour = "black", size = 1.5, fontface = "bold", hjust = "left")+
+    annotate("curve", x = 1975, y = 680000, xend = 1987, yend = 680000, curvature = .0, color="black")+ 
+  scale_y_continuous(labels = c("500.000", "600.000", "700.000"), n.breaks = 3, limits = c(500000, 700000), expand = c(0,0))+
+  scale_x_continuous(breaks=c(1975, 1980, 1985, 1990, 1995, 2000))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_20,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                   #Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+
+```
+## 6.1. Leichte Geburtenzunahme durch die Babyboomer und Kinder von Einwanderern: Die natürliche Bevölkerungsentwicklung von 1975 bis 2000
+
+Im letzten Viertel des 20. Jahrhunderts verzeichnete die Dortmunder Bevölkerung zwei Phasen steigender Geburtenzahlen, die jeweils auf unterschiedliche Ursachen zurückzuführen sind:
+
+Der Anstieg der Geburtenzahlen in den Jahren 1979 bis 1982 wird in den Publikationen der Dortmunder Statistik auf die allgemein höheren Geburtenzahlen von aus dem Ausland zugewanderten Dortmunder_innen zurückgeführt (Dortmunder Statistik 1987, S. 8–9).
+
+Die zweite Phase von 1986 bis 1997 lässt sich durch die Generation der Babyboomer erklären, die in diesem Zeitraum in die Familiengründungsphase eintrat. Die Größe dieser Alterskohorte führte zu einem  Anstieg der jährlichen Geburten in Dortmund (Dortmunder Statistik 1993a, S. 2).
+
+
+```{r}
+
+Geb_Sterb20 <- Geb_Sterb |> dplyr::mutate(
+  Geburten_Dor = ifelse(Jahr %in% c(1900:1974), NA, Geburten_Dor),
+  Todesfälle_Dor = ifelse(Jahr %in% c(1900:1974), NA, Todesfälle_Dor),
+    Geburten_Jahr = ifelse(Jahr %in% c(1900:1974), NA, Geburten_Jahr),
+  Todesfälle_Jahr = ifelse(Jahr %in% c(1900:1974), NA, Todesfälle_Jahr),
+    Geburten_IT = ifelse(Jahr %in% c(1900:1974), NA, Geburten_IT),
+  Todesfälle_IT = ifelse(Jahr %in% c(1900:1974), NA, Todesfälle_IT),
+  Jahr = ifelse(Jahr %in% c(1900:1974), NA, Jahr)) 
+
+
+Geb_Ge_Plot20 <- ggplot(Geb_Sterb20)+
+  geom_line(aes(x = Jahr, y = Geburten_Dor),linetype = 1,linewidth=0.5, color = rol1)+
+  geom_line(aes(x=Jahr, y = Todesfälle_Dor),linetype = 1,linewidth=0.5, color = rol5)+
+  geom_line(aes(x = Jahr, y = Geburten_IT),linetype = 1,linewidth=0.5, color = "#A0522D")+
+  geom_line(aes(x=Jahr,Todesfälle_IT),linetype = 1,linewidth=0.5, color = "#CD6839")+
+  ggtitle("Die Geburten und Sterbefälle von 1974 bis 2000")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Geburten_Dor,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Geburten_Dor),
+                         fill = rol1,
+                         pch=21,
+                         size=0.5,
+                         color=rol1,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Geburten_IT,
+                             tooltip = paste0(Jahr, "\n", "Geburten: ", format(Geburten_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Geburten_IT),
+                         fill = "#A0522D",
+                         pch=21,
+                         size=0.5,
+                         color="#A0522D",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Todesfälle_Dor,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_Dor, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Todesfälle_Dor),
+                         fill = rol5,
+                         pch=21,
+                         size=0.5,
+                         color=rol5,
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Todesfälle_IT,
+                             tooltip = paste0(Jahr, "\n", "Todesfälle: ", format(Todesfälle_IT, big.mark = ".", decimal.mark = ","), "\n", "Quelle: IT. NRW"), data_id=Todesfälle_IT),
+                         fill = "#CD6839",
+                         pch=21,
+                         size=0.5,
+                         color="#CD6839",
+                         width=1)+
+  #Geburtenanstieg durch ausländische Bevölkerung
+    annotate("text", x = 1979, y = 6200, size = 2, label = "1. Anstiegsphase", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+    annotate("curve", x = 1979, y = 6000, xend = 1982, yend = 6000, curvature = .0, color="black")+
+  #Kinder der Babyboomer
+    annotate("text", x = 1989, y = 5200, size = 2, label = "Kinder der Baby-Boomer", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+    annotate("curve", x = 1986, y = 5000, xend = 1997, yend = 5000, curvature = .0, color="black")+
+  annotate("text", x = 1976, y = 9800, size = 2, label = "Todesfälle (Dortmunder Statistik)", colour = rol5, size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1976, y = 9500, size = 2, label = "Geburten (Dortmunder Statistik)", colour = rol1, size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1976, y = 9200, size = 2, label = "Todesfälle (IT. NRW)", colour = "#CD6839", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1976, y = 8900, size = 2, label = "Lebendgeborene (IT.NRW)", colour = "#A0522D", size = 1.3, fontface = "bold", hjust = "left")+
+  scale_x_continuous(breaks=c(1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000))+
+  scale_y_continuous(labels = c("4.000", "5.000", "6.000", "7.000", "8.000", "9.000", "10.000"), n.breaks= 7, limits = c(4000, 10000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Geb_Ge_Plot20,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+
+
+
+
+
+## 6.2. Krise der Stahlindustrie, internationale Zuwanderung und Suburbanisierung in den Jahren 1975-2000
+
+In den letzten 25 Jahren wurde die Wanderungstatistik Dortmunds durch folgende Faktoren geprägt:
+
+1. Das Ende des Kohleergbaus
+2. Die intensivierte Krise der eisen- und stahlproduzierenden Industrie 
+3. Zuwanderung durch Spätaussiedler, Familiennachzug, den Jugoslawienkriegen und dem Mauerfall
+4. Bevölkerungsverluste an das ländliche Umland
+
+Da das Statistische Jahrbuch Deutscher Gemeinden für den Zeitraum von 1975 bis 2000 die Daten des statistischen Landesamts verwenden, wird auf eine graphische Darstellung der Angaben von IT.NRW verzichtet, da diese identisch sind. 
+
+
+```{r}
+
+Zu_Fort_short_20 <- Zu_Fort2 |> dplyr::mutate(
+  Jahr = ifelse(Jahr %in% c(1900:1974), NA, Jahr), 
+  Zuzüge_Jahrbuch = ifelse(Jahr %in% c(1900:1974), NA, Zuzüge_Jahrbuch),
+  Fortzüge_Jahrbuch = ifelse(Jahr %in% c(1900:1974), NA, Fortzüge_Jahrbuch))
+
+#Hier wird der Datensatz so geändert, dass aus den zuletzt veröffentlichten Daten der Dortmunder Statistik eine Linie in ggplot bildbar wird. In "test wird die höchste Zahl aus "Quelle Dortmund entnommen. Bei max_version wird ein neuer Datensatz angelegt, wob für jedes Jahr die höchste aus den Quellen entnommene Zahl angegeben wird. in test_vers werden test und max_version dann miteinander verbunden. Letzter schritt in test_vers2, wo eine weitere Spalte angelegt wird ("Version_Diagramm"). Dort steht 1 für die letzte und somit gewünschte Angabe, 0 für die älteren.  Version_Diagramm dient dann bei der einteilung der Linien in ggplot dazu, durch den Einsatz von dplyr::filter(Version_Diagramm == 1) die gewünschte Linie zu Formen.
+
+
+# Höchste Zahl aus Quellenangabe extrahieren als neue Spalte
+Zu_Fort_short_20 <- Zu_Fort_short_20 |> 
+  mutate(
+    Quelle_Version = str_extract(Quelle_Dortmund, "\\d+")
+  )
+# Neuer Datensatz, welcher für jedes Jahr die höchste aus der Quellenangabe extrahierte Zahl angbit
+max_version <- Zu_Fort_short_20 |> group_by(Jahr) |> 
+  summarise(
+    Version_max = max(Quelle_Version, na.rm = TRUE)
+  )
+# beide Datensätze werden verbunden
+Zu_Fort_short_20 <- Zu_Fort_short_20 |> left_join(max_version |> dplyr::filter(!is.na(Jahr)))
+# weitere Spalte im Datensatz angelegt durch ifelse. Dabei folgender Ansatz: Wenn die Angabe für Quelle_Version und für Version_Max gleich sind, also die höchste Zahl, dann wird in neuer Spalte eine 1 eingetragen, andernfalls eine 0
+
+Zu_Fort_short_20 <- Zu_Fort_short_20 |> mutate(Finale_Daten = ifelse(Quelle_Version == Version_max, 1, 0))
+
+
+
+Plot_Zu_Fort_short_20 <- ggplot(Zu_Fort_short_20)+
+  geom_line(aes(x = Jahr, y = Zuzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color = "#CDAD00")+
+  geom_line( data = Zu_Fort_short_20 |> dplyr::filter(Finale_Daten == 1), aes(x = Jahr, y = Fortzüge_Amt_Dortmund),linetype = 1,linewidth=0.75, color= "#FFD700")+
+  geom_line(aes(x = Jahr, y = Zuzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#104E8B")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#1E90FF")+
+  geom_line(aes(x = Jahr, y = Fortzüge_Jahrbuch),linetype = 1,linewidth=0.75, color= "#1E90FF")+
+  ggtitle("Zu- und Fortzüge Dortmunds von 1974 bis 2000")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Zuzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Zuzüge_Amt_Dortmund),
+                         fill = "#CDAD00",
+                         pch=21,
+                         size=0.5,
+                         color="#CDAD00",
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Amt_Dortmund,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Amt_Dortmund, big.mark = ".", decimal.mark = ","), "\n", format(Quelle_Dortmund, big.mark = ".", decimal.mark = ","), "\n", "Amt für Statistik Dortmund"), data_id=Fortzüge_Amt_Dortmund),
+                         fill = "#FFD700",
+                         pch=21,
+                         size=0.5,
+                         color="#FFD700",
+                         width=1)+
+      geom_point_interactive(aes(x=Jahr, y=Zuzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Zuzüge: ", format(Zuzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Zuzüge_Jahrbuch),
+                         fill = "#104E8B",
+                         pch=21,
+                         size=0.5,
+                         color= "#104E8B",
+                         width=1)+
+    geom_point_interactive(aes(x=Jahr, y=Fortzüge_Jahrbuch,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge: ", format(Fortzüge_Jahrbuch, big.mark = ".", decimal.mark = ","), "\n", "Stat. Jahrbuch Deutscher Gemeinden"), data_id=Fortzüge_Jahrbuch),
+                         fill = "#1E90FF",
+                         pch=21,
+                         size=0.5,
+                         color="#1E90FF",
+                         width=1)+
+  annotate("text", x = 1975, y = 10000, size = 2.3, label = "Fortzüge (Stat. Jahrbuch)", colour = "#1E90FF", size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975, y = 7000, size = 2.3, label = "Zuzüge (Stat. Jahrbuch)", colour = "#104E8B", size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975, y = 4000, size = 2.3, label = "Zuzüge (Dortmunder Statistik)", colour = "#CDAD00", size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975, y = 1000, size = 2.3, label = "Fortzüge (Dortmunder Statistik)", colour = "#FFD700", size = 1.5, fontface = "bold", hjust = "left")+
+    #Negatives Saldo mit dem Umland
+    annotate("text", x = 1993, y = 32000, size = 2, label = "Negativer Austausch mit ländl. Umland", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+    annotate("curve", x = 1994, y = 30000, xend = 2000, yend = 30000, curvature = .0, color="black")+
+  scale_x_continuous(breaks=c(1975, 1980, 1985, 1990, 1995, 2000))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000", "30.000", "40.000"), n.breaks= 5, limits = c(0, 40000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Plot_Zu_Fort_short_20,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+<button type="button" class="collapsebutton" data-toggle="collapse" data-target="#Info-20">Mehr Details zu den Zu- und Fortzugsströmen</button>
+<div id="Info-20" class="collapse">
+
+<p>
+
+
+
+
+## {.tabset}
+
+### 6.2.1. Zuwanderung bis 2000: Familiennachzug, Spätaussielder, Mauerfall und junge Erwachsene waren die wichtigsten Treiber
+
+In der folgenden Grafik fallen insbesondere die massiven Schwankungen des Zuzugs aus dem Ausland auf. Auffällig sind zwei Spitzen der Zuwanderung: die erste in den Jahren 1978 bis 1981, die zweite zwischen 1986 und 1990.
+
+Bei der ersten Zuwanderungsspitze aus dem Ausland innerhalb des Zeitraums von 1978 bis 1981 liegt die Vermutung nahe, dass es sich dabei vor allem um den Familiennachzug der in Dortmund lebenden und arbeitenden türkischen Männer handelte. Das Anwerbeabkommen mit der Türkei war 1973 infolge der sich abzeichnenden Weltwirtschaftskrise ausgesetzt worden (Luft 2014). In den darauffolgenden Jahren setzte der Familiennachzug der in Deutschland verbliebenen Einwanderer ein (Luft 2014).
+
+Die zweite Spitze der Zuzüge aus dem Ausland erklärt sich durch die massive Einwanderung von Spätaussiedlern, überwiegend aus Polen und der ehemaligen Sowjetunion nach Dortmund (Dortmunder Statistik 1993a, S. 3). Dass die jährlichen Zuzugszahlen anschließend nicht auf das vorherige Niveau zurückfielen sondern bis zum Ende des Jahrtausends auf einem höheren Niveau relativ konstant blieben, ist auf die ab 1991 ausgebrochenen Jugoslawienkriege zurückzuführen. Diese führten zu einem wachsenden Bevölkerungsanteil der aus Jugoslawien eingewanderten Dortmunder_innen, die schon vor Beginn der Kriege nach den Einwander_innen aus der Türkei die zweitgrößte Zuwanderungsgruppe in Dortmund stellten (Dortmunder Statistik 1993a, S. 6).
+
+Sowohl der kurzzeitige Anstieg in der Kategorie „Sonstige“ als auch der im Jahr darauf folgende Anstieg der Zuzüge aus den Bundesländern sind auf den Mauerfall zurückzuführen. In den Jahren 1989 und 1990 zogen über 4.000 Menschen aus den Gebieten der ehemaligen DDR nach Dortmund (Dortmunder Statistik 1993a, S. 3). Warum die unter der Kategorie „Sonstige“ erfassten Zuzüge auch nach dem kurzzeitigen, durch den Mauerfall bedingten Anstieg auf einem höheren Niveau blieben, konnte nicht geklärt werden. Die Quellen machen keine Angaben darüber, welche Gruppen genau in dieser Kategorie zusammengefasst sind (vgl. Dortmunder Statistik 1991; Dortmunder Statistik 1992; Dortmunder Statistik 1993). Für das Jahr 1998 wird die Kategorie „Sonstige“ hingegen als Summe der durch die Ämter vorgenommenen An- und Abmeldungen ohne nähere Angaben ausgewiesen (Dortmunder Statistik 1999, S. 11).
+
+Der ab 1993 beobachtbare Anstieg der Zuzüge aus NRW lässt sich durch die wachsende Bedeutung Dortmunds als Ausbildungsstandort sowie durch die Ansiedlung neuer Unternehmen und die damit verbundene Schaffung von Arbeitsplätzen für jüngere Arbeitnehmer erklären (vgl. Högl. 1994, S. 503-504 /Städteatlas. 2017, S. 34-35).
+
+```{r}
+
+Zustrome_20 <- Zu_Fort_Data |> subset(Jahr >1974)
+Zustrome_20$Fortzüge_Amt_Dortmund <- NULL
+Zustrome_20$Fortzüge_NRW<- NULL
+Zustrome_20$Fortzüge_Bundesländer<- NULL
+Zustrome_20$Fortzüge_Osten<- NULL
+Zustrome_20$Fortzüge_Ausland<- NULL
+Zustrome_20$Fortzüge_Jahrbuch<- NULL
+Zustrome_20$Zuzüge_Jahrbuch<- NULL
+Zustrome_20$Zuzüge_IT_NRW<- NULL
+Zustrome_20$Fortzüge_IT_NRW<- NULL
+Zustrome_20$Fortzüge_IT_NRW<- NULL
+Zustrome_20$Zuzüge_Sowj._Einflussbereich<- NULL
+Zustrome_20$Quelle_IT<- NULL
+Zustrome_20$Quelle_Jahrbuch<- NULL
+Zustrome_20$Quelle_IT<- NULL
+Zustrome_20$Quelle_Dortmund<- NULL
+Zustrome_20$Sonstige <- Zustrome_20$Zuzüge_Amt_Dortmund -  Zustrome_20$Zuzüge_NRW - Zustrome_20$Zuzüge_Bundesländer - Zustrome_20$Zuzüge_Ausland
+
+Zustrome_20$Zuzüge_Amt_Dortmund<- NULL
+
+
+Zustrome_20 <- pivot_longer(Zustrome_20, cols = c(2:5),
+                            names_to = "Zuzug_Art",
+                            values_to = "Anzahl")
+Zustrome_20 <- na.omit(Zustrome_20)
+
+Zustrome_20 <- mutate(Zustrome_20,
+  Zuzug_Art = case_when(Zuzug_Art == "Zuzüge_Amt_Dortmund" ~ "Alle Zuzüge:",
+                   Zuzug_Art == "Zuzüge_NRW" ~ "Zuzüge NRW:",
+                   Zuzug_Art == "Zuzüge_Bundesländer" ~ "Zuzüge Bundesländer:",
+                   Zuzug_Art == "Zuzüge_Ausland" ~ "Zuzüge Ausland:",
+                   Zuzug_Art == "Sonstige" ~ "Sonstige:")
+)
+
+
+Zustrom_20_Plot <- ggplot(Zustrome_20)+
+  geom_line(aes(x = Jahr, y = Anzahl, color = Zuzug_Art),linetype = 1,linewidth=0.75, show.legend = FALSE)+
+  ggtitle("Die wichtigsten Zuzugströme")+
+  scale_color_manual(values = c("Alle Zuzüge:" = rol3, "Zuzüge NRW:" = rol1, "Zuzüge Bundesländer:" = rol2, "Zuzüge Ausland:" = rol17, "Sonstige:" = rol15))+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "none",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Anzahl, fill = Zuzug_Art, color = Zuzug_Art,
+                             tooltip = paste0(Jahr, "\n", format(Zuzug_Art, big.mark = ".", decimal.mark = ","), format(Anzahl, big.mark = ".", decimal.mark = ",")), data_id=Anzahl),
+                         pch=21,
+                         size=0.5,
+                         width=1)+
+    #Spätaussiedker
+  annotate("text", x = 1986.5, y = 15500, size = 2.0, label = "Spätaussiedler", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1986, y = 15000, xend = 1990, yend = 15000, curvature = .0, color="black")+
+  #Jugoslawienkrieg
+  annotate("text", x = 1995, y = 17300, size = 2.0, label = "Jugoslawienkriege", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1991, y = 16700, xend = 2000, yend = 16700, curvature = .0, color="black")+
+  # Mauerfall
+  annotate("text", x = 1988, y = 7200, size = 2.0, label = "Mauerfall", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1989, y = 6900, xend = 1989, yend = 3400, curvature = .0, arrow = arrow(length = unit(0.1, "cm"), type = "closed"), color="black")+
+  # Familiennachzug
+  annotate("text", x = 1978, y = 8500, size = 2.0, label = "Familiennachzug", colour = "black", size = 1.3, fontface = "bold", hjust = "left")+
+  annotate("curve", x = 1978, y = 8200, xend = 1981, yend = 8200, curvature = .0, color="black")+  
+  #Legende
+  annotate("text", x = 1977, y = 14000, size = 2.0, label = "Zuzüge NRW", colour = rol1, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975, y = 6000, size = 2.0, label = "Zuzüge Bundesländer", colour = rol2, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1980, y = 7000, size = 2.0, label = "Zuzüge Ausland", colour = rol17, size = 1.5, fontface = "bold")+
+  annotate("text", x = 1980, y = 1100, size = 2.0, label = "Sonst.", colour = rol15, size = 1.5, fontface = "bold")+
+
+  
+
+  scale_fill_manual(values = c("Alle Zuzüge:" = rol3, "Zuzüge NRW:" = rol1, "Zuzüge Bundesländer:" = rol2, "Zuzüge Ausland:" = rol17, "Sonstige:" = rol15))+
+  scale_x_continuous(breaks=c(1975, 1980, 1985, 1990, 1995, 2000))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000"), n.breaks= 3, limits = c(0, 20000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+
+ggiraph::girafe(ggobj =Zustrom_20_Plot,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+```
+
+
+### 6.2.2. Suburbanisierung und eine Unbekannte - Die Fortzüge von 1975 bis 2000
+
+Neben diesen Registerbereinigungen kann der Anstieg der Fortzugszahlen in dieser Kategorie durch die wirtschaftlichen Ereignisse der 80er erklärt werden. Mit der Schließung der Hoesch-Westfalenhütte schloss im Jahr 1982 Dortmunds größter Arbeitgeber (Högl. 1994, S. 502). Darüber hinaus schlossen 1985 mit Zeche Gneisenau und Zeche Minister Stein im Jahr 1987 die letzten Kohlebergwerke der Stadt. Im Vergleich zum Jahr 1964 versiebenfachte sich die Arbeitslosenquote im Jahr 1985 auf 17.3% (Högl. 1994, S. 502). Folglich liegt die Vermutung nahe, dass viele Dortmunder_innen in diesen Jahren infolge der massiven Arbeitsplatzverluste die Stadt verließen, ohne den obligatorischen Ab- bzw. Ummeldeprozess zu durchlaufen.
+
+Ab den 1990er-Jahren ist ein Anstieg der Fortzüge innerhalb Nordrhein-Westfalens zu beobachten. Ein erheblicher Teil dieser Abwanderung entfiel auf das ländliche Umland, insbesondere den Kreis Unna. In den Jahren 1994 bis 1999 stellten die Fortgezogenen in diesen Kreis über 30% aller Abwandernden und bildeten damit die größte Gruppe der fortgezogenen Dortmunder_innen (Dortmunder Statistik 2001, S.8).
+
+Im Rahmen einer Befragung von Fortgezogenen sowie einer Analyse der Zu- und Fortzugsdaten der Jahre 1992 bis 1999 wurden die Bewegungen in das und aus dem unmittelbaren Umland Dortmunds genauer untersucht. Die Befragung fand zwischen März und Mai 2001 statt und umfasste 6.000 Fortgezogene sowie 4.000 Zugezogene der Jahre 1998 bis 2000.
+
+Hinsichtlich der Zugezogenen wird Dortmunds Rolle als Ausbildungszentrum und Dienstleistungsstandort im Ruhrgebiet deutlich: 21% der Befragten waren Auszubildende oder Studierende, mehr als 45% gehörten der Gruppe der Beamten und Angestellten an (Dortmunder Statistik 2001, S.10). Im Vergleich dazu stellten Studierende und Auszubildende mit knapp 5% neben Erwerbslosen die kleinste Gruppe der ins Umland Fortgezogenen. Bei den Fortgezogenen waren Beamte und Angestellte mit über 55% die größte Gruppe.
+
+Bedeutsame Unterschiede zeigen sich beim Einkommen: Während etwa 35% der Zugezogenen ein Einkommen von maximal 2.000 DM angaben (bei den Fortgezogenen ca. 13%), verfügten rund 37% der Fortgezogenen über 3.000 bis 5.000 DM (25% bei den Zugezogenen). Weitere 25% der Fortgezogenen gaben ein Einkommen von 5.000 bis 8.000 DM an (ca. 16% der Zugezogenen) (Dortmunder Statistik 2001, S.10).
+
+Auch die Altersstruktur weist deutliche Unterschiede auf: Für die Jahre 1998 bis 2000 verzeichnete Dortmund – mit Ausnahme der 16- bis 28-Jährigen – in allen Altersgruppen negative Wanderungssalden. Die Stadt verlor in diesem Zeitraum 1.295 Einwohner_innen bis 15 Jahre, 4.187 im Alter von 29 bis 44 Jahren sowie 3.188 Personen ab 60 Jahren (Dortmunder Statistik 2001, S.6). Allein in der Altersgruppe der 16- bis 28-Jährigen verzeichnete Dortmund einen Zuwachs von 6.997 Personen.
+
+Die wichtigsten Ziele der Fortgezogenen waren die ländlichen Nachbarkreise Unna, Recklinghausen und Ennepe-Ruhr, wobei die stärksten Verflechtungen mit der Stadt Unna bestanden. 22% der Fortgezogenen zogen in diesen Kreis, während 18% aller Zugezogenen im Zeitraum 1992 bis 1999 aus Unna stammten (Dortmunder Statistik 2001, S.8). Im Gegensatz dazu war die Wanderungsbilanz mit der Stadt Bochum ausgeglichen (Dortmunder Statistik 2001, S. 21).
+
+Am Beispiel der Verflechtungen mit Unna wird deutlich, dass Dortmund im letzten Jahrzehnt des 20. Jahrhunderts von Suburbanisierung betroffen war. Insbesondere wohlhabendere Personen zogen nach Unna, häufig mit Zielen wie Eigentumsbildung, besseren Spielmöglichkeiten für ihre Kinder oder dem Wunsch nach grünem Wohnumfeld (Dortmunder Statistik 2001, S.22).
+
+Die Abwanderung einkommensstarker Bevölkerungsteile in den 1990er-Jahren im Gegensatz zu den 1960er- und 1970er-Jahren lässt sich durch die Bevölkerungsentwicklung Dortmunds und die daraus resultierenden Auswirkungen auf den Wohnungsmarkt erklären. Mit der Abnahme der Bevölkerung von ca. 659.000 Einwohner_innen im Jahr 1965 auf 573.000 im Jahr 1987 entspannte sich der Wohnungsmarkt deutlich (Högl 1994, S.501). Diese Bedingungen endeten durch das Bevölkerungswachstum zwischen 1988 und 1993. Die Stagnation des Wohnungsbaus während rückläufiger Bevölkerungszahlen führte in einer Phase des Bevölkerungswachstums zu einer angespannten Wohnraumsituation, gekennzeichnet durch unzureichendes Angebot und steigende Preise. Dies förderte die Abwanderung in die umliegenden ländlichen Kreise, da die äußeren Stadtbezirke Dortmunds nicht in der Lage waren, den Bedarf nach größeren Wohnungen mit ausreichenden Grünanlagen zu decken (Högl 1994, S.501; Dortmunder Statistik 2001, S.22).
+
+Wie bereits bei den Zuzügen liegt auch in der Kategorie „Sonstiges“ die Vermutung nahe, dass es sich bei den steigenden Fortzugszahlen überwiegend um von Amts wegen abgemeldete Personen handelt (vgl. Dortmunder Statistik 1991; Dortmunder Statistik 1992; Dortmunder Statistik 1993). Für die Jahre 1982, 1983 und 1992 lassen sich zudem Registerbereinigungen nachweisen (Dortmunder Statistik 1983; Dortmunder Statistik 1984; Dortmunder Statistik 1993). In den Sonderheften „Die Dortmunder Bevölkerung im Jahre 1982“ und „…1983“ wird bei den Fortzügen in der Kategorie „Sonstiges“ ausdrücklich vermerkt, dass Registerbereinigungen durchgeführt wurden. In den Folgejahren findet sich eine solche Bemerkung hingegen nicht (vgl. Dortmunder Statistik 1985ff). 
+
+Auch für den zweiten Anstieg der Fortzüge in der Kategorie „Sonstiges“ ab 1992 kann – abgesehen von der Registerbereinigung 1992 - keine Erklärung in den Publikationen der Dortmunder Statistik gefunden werden, warum die Zahl an unbekannten Fortzügen in diesen Jahren zunahm.
+
+
+
+```{r}
+
+
+Fort_short_20 <- Zu_Fort2 |> subset(Jahr >= 1975)
+
+
+#Hier wird der Datensatz so geändert, dass aus den zuletzt veröffentlichten Daten der Dortmunder Statistik eine Linie in ggplot bildbar wird. In "test wird die höchste Zahl aus "Quelle Dortmund entnommen. Bei max_version wird ein neuer Datensatz angelegt, wob für jedes Jahr die höchste aus den Quellen entnommene Zahl angegeben wird. in test_vers werden test und max_version dann miteinander verbunden. Letzter schritt in test_vers2, wo eine weitere Spalte angelegt wird ("Version_Diagramm"). Dort steht 1 für die letzte und somit gewünschte Angabe, 0 für die älteren.  Version_Diagramm dient dann bei der einteilung der Linien in ggplot dazu, durch den Einsatz von dplyr::filter(Version_Diagramm == 1) die gewünschte Linie zu Formen.
+
+
+# Höchste Zahl aus Quellenangabe extrahieren als neue Spalte
+Fort_short_20 <- Fort_short_20 |> 
+  mutate(
+    Quelle_Version = str_extract(Quelle_Dortmund, "\\d+")
+  )
+# Neuer Datensatz, welcher für jedes Jahr die höchste aus der Quellenangabe extrahierte Zahl angbit
+max_version <- Fort_short_20 |> group_by(Jahr) |> 
+  summarise(
+    Version_max = max(Quelle_Version, na.rm = TRUE)
+  )
+# beide Datensätze werden verbunden
+Fort_short_20 <- Fort_short_20 |> left_join(max_version |> dplyr::filter(!is.na(Jahr)))
+# weitere Spalte im Datensatz angelegt durch ifelse. Dabei folgender Ansatz: Wenn die Angabe für Quelle_Version und für Version_Max gleich sind, also die höchste Zahl, dann wird in neuer Spalte eine 1 eingetragen, andernfalls eine 0
+
+Fort_short_20 <- Fort_short_20 |> mutate(Finale_Daten = ifelse(Quelle_Version == Version_max, 1, 0))
+
+Fort_short_20$Zuzüge_Amt_Dortmund <- NULL
+Fort_short_20$Zuzüge_NRW <- NULL
+Fort_short_20$Zuzüge_Bundesländer <- NULL
+Fort_short_20$Zuzüge_Sowj._Einflussbereich <- NULL
+Fort_short_20$Zuzüge_Ausland <- NULL
+Fort_short_20$Zuzüge_Jahrbuch <- NULL
+Fort_short_20$Zuzüge_IT_NRW <- NULL
+Fort_short_20$Fortzüge_Osten <- NULL
+Fort_short_20$Quelle_Jahrbuch <- NULL
+Fort_short_20$Quelle_IT <- NULL
+
+
+Fort_short_20$Sonstige <- Fort_short_20$Fortzüge_Amt_Dortmund -  Fort_short_20$Fortzüge_NRW - Fort_short_20$Fortzüge_Bundesländer - Fort_short_20$Fortzüge_Ausland
+
+Fort_short_20$Fortzüge_IT_NRW <- NULL
+
+
+
+
+Plot_Fort_short_20 <- ggplot(Fort_short_20)+
+  geom_line(aes(x = Jahr, y = Fortzüge_Bundesländer),linetype = 1,linewidth=0.75, color= rol2)+
+  geom_line(aes(x = Jahr, y = Fortzüge_Ausland),linetype = 1,linewidth=0.75, color= rol17)+
+  geom_line(aes(x = Jahr, y = Sonstige),linetype = 1,linewidth=0.75, color= rol15)+
+  geom_line(aes(x = Jahr, y = Fortzüge_NRW),linetype = 1,linewidth=0.75, color= rol1)+
+  ggtitle("Die Ziele der Fortgezogenen von 1975-2000")+
+  theme_minimal()+
+  theme(panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.line = element_line(colour = "grey"),
+        plot.title = element_text(size= 12, face = "italic"),
+        legend.position = "bottom",
+        legend.key.size = unit(1, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.key.width = unit(1, "cm"),
+        legend.title = element_text(size=8),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(0,0,0,0),
+        legend.text = element_text(size=6))+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_NRW,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge NRW: ", format(Fortzüge_NRW, big.mark = ".", decimal.mark = ","), "\n",  "Quelle: Dortmunder Statistik"), data_id=Fortzüge_NRW),
+                         fill = rol1,
+                         pch=21,
+                         size=0.5,
+                         color=rol1,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Bundesländer,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge Bundesländer: ", format(Fortzüge_Bundesländer, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Fortzüge_Bundesländer),
+                         fill = rol2,
+                         pch=21,
+                         size=0.5,
+                         color=rol2,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Fortzüge_Ausland,
+                             tooltip = paste0(Jahr, "\n", "Fortzüge Ausland: ", format(Fortzüge_Ausland, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Fortzüge_Ausland),
+                         fill = rol17,
+                         pch=21,
+                         size=0.5,
+                         color=rol17,
+                         width=1)+
+  geom_point_interactive(aes(x=Jahr, y=Sonstige,
+                             tooltip = paste0(Jahr, "\n", "Sonstige: ", format(Sonstige, big.mark = ".", decimal.mark = ","), "\n", "Quelle: Dortmunder Statistik"), data_id=Sonstige),
+                         fill = rol15,
+                         pch=21,
+                         size=0.5,
+                         color=rol15,
+                         width=1)+
+  annotate("text", x = 1975, y = 15500, size = 1.8, label = "Fortzüge NRW", colour = rol1, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1977, y =5000,size = 1.8, label = "Fortzüge Bundesländer", colour = rol2, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1978, y = 1700, size = 1.8, label = "Fortzüge Ausland", colour = rol17, size = 1.5, fontface = "bold", hjust = "left")+
+  annotate("text", x = 1975.7, y = 6900, size = 1.8, label = "Sonstig.", colour = rol15, size = 1.5, fontface = "bold", hjust = "left")+
+  scale_x_continuous(breaks=c(1975, 1980, 1985, 1990, 1995, 2000))+
+  scale_y_continuous(labels = c( "0","10.000", "20.000"), n.breaks= 3, limits = c(0, 20000), expand=c(0,0))+
+  xlab("")+
+  ylab("")
+ggiraph::girafe(ggobj =Plot_Fort_short_20,
+                height_svg = 4,
+                width_svg = 6,
+                options = list(
+                  # Gestaltung des tooltips
+                  opts_tooltip(css= "font-family: Helvetica; padding:3pt; color:white; background-color:#15253F; border-radius:5px", use_fill = F),
+                  # Hover Optionen 
+                  opts_hover(css = "stroke-width:2;"),
+                  opts_hover_inv(css = "opacity:0.5"), 
+                  opts_toolbar(position = "topright", 
+                               saveaspng = F)
+                ))
+
+
+```
+
+</p>
+<button type="button" class="collapsebuttonclose" data-toggle="collapse" data-target="#Info-20">Details zu den Zu- und Fortzugsströmen schließen</button>
+<div id="Info-20" class="collapse">
+</div>
+</div>
+<p>
+
+
+# 7. Fazit und Ausblick
+
+Im Rahmen dieses Projekts ist es gelungen, durch die Sichtung und Visualisierung der Daten aus dem lokalen Archiv der Dortmunder Statistik sowie unter Einbeziehung der Quellen des Dortmunder Stadtarchivs den Betrachtungshorizont deutlich auszuweiten. Vor Projektbeginn standen digitalisierte Bevölkerungsdaten erst ab 1953 zur Verfügung; nach Abschluss dieser Arbeit konnte die Entwicklung der Gesamtbevölkerung bis einschließlich 1900 nachvollzogen werden.
+
+Darüber hinaus wurden neue Daten zu den Wanderungsbewegungen der Dortmunder Bevölkerung in der ersten Hälfte des 20. Jahrhunderts gesichtet, die aufschlussreiche Einblicke in die Zu- und Fortzüge dieser Zeit bieten. In einer zweiten Phase konnte durch die Ergänzung der natürlichen Bevölkerungsentwicklung ein präziseres Bild der Bevölkerungsdynamik Dortmunds gewonnen werden.
+
+Die Quellenlage zeigt, dass die Informationsdichte insbesondere in den 1950er- und 1960er-Jahren sehr hoch war – etwa bei abweichenden Angaben zwischen der Dortmunder Statistik und dem Statistischen Landesamt oder bei Mehrfachangaben innerhalb der Dortmunder Statistik. Ab den 1960er-Jahren nimmt diese Informationsfülle jedoch deutlich ab, möglicherweise auch infolge verlorengegangener Quellen.
+
+Die geringere Informationsdichte in den letzten 25 Jahren des 20. Jahrhunderts erschwert insbesondere die Klärung der Kategorien „Sonstige“ bzw. „Unbekannt“ bei den Zu- und Fortzügen. Während in den 1950er-Jahren anhand des im Stadtarchiv überlieferten Schriftverkehrs erkennbar ist, dass die Dortmunder Statistik aktiv um Aufklärung abweichender Daten bemüht war, lassen sich vergleichbare Bemühungen in den folgenden Jahrzehnten nicht mehr nachweisen.
+
+Für das letzte Jahrzehnt des 20. Jahrhunderts wird zwar ein Bevölkerungsverlust Dortmunds an das ländliche Umland festgestellt, gleichzeitig betont die Dortmunder Statistik, dass Dortmund im Vergleich zu anderen Städten nur in geringem Ausmaß von Suburbanisierung betroffen gewesen sei (Dortmunder Statistik 1969a, S. 8). Diese Einschätzung könnte kritisch überprüft werden. Angesichts des starken Bevölkerungswachstums in den 1950er- und 1960er-Jahren erscheint ein gleichzeitiger, entsprechend umfangreicher Wohnungsbau unwahrscheinlich. In Verbindung mit dem frühen Anstieg der Zahl privater Kraftfahrzeuge bereits Anfang der 1950er-Jahre liegt die Annahme nahe, dass Abwanderungen ins Umland durchaus stattgefunden haben. Eine Vertiefung des Projekts könnte darin bestehen, den Wohnungsbau und die Zahl der verfügbaren Wohneinheiten für die 1960er und 1970er Jahre systematisch mit den Bevölkerungszahlen zu vergleichen und die Nachbarkreise Dortmunds auf Zuwächse durch verstärkten Zuzug zu untersuchen. Dafür bieten die Statistischen Jahrbücher Deutscher Städte eine geeignete Datenbasis. Ergänzend könnten die bereits erstellten Darstellungen zur Bevölkerungsentwicklung der einzelnen Stadtbezirke um Informationen zum Wohnungsbau erweitert werden, um Ursachen für Zu- und Abwanderung deutlicher zu machen und zu erkenne, in welchen Zeiträumen und in welchen Umfang die äußeren Stadtbezirke Dortmunds die Abwanderung der Bevölkerung von den Stadtzentren ins Umland auffangen konnten.
+
+Eine weitere Möglichkeit wäre ein regionaler Vergleich: Nachdem die wichtigsten Daten zur Bevölkerungsentwicklung Dortmunds im 20. Jahrhundert erschlossen wurden, könnte geprüft werden, ob ähnliche Entwicklungen auch in anderen Städten des Ruhrgebiets nachweisbar sind. Dabei stellen sich Fragen nach Synchronität, Unterschieden und deren Ursachen. Von besonderem Interesse wäre zudem die Hypothese des Leiters des Dortmunder Stadtarchivs, wonach Dortmunds Strukturwandel im Vergleich zu anderen Ruhrgebietsstädten früher einsetzte.
+
+Schließlich besteht weiteres Potenzial, auch die abweichenden Angaben der letzten Jahrzehnte des 20. Jahrhunderts zu analysieren. In der Bibliothek des Statistischen Landesamts in Düsseldorf könnten sowohl die angewandten Berechnungsmethoden als auch der Schriftverkehr zwischen dem Landesamt und der Dortmunder Statistik untersucht werden. Sollten entsprechende Akten vorhanden sein, bestünde eine hohe Wahrscheinlichkeit, die Ursachen für die abweichenden Angaben zu erklären, da viele bereits bekannte Unstimmigkeiten aus genau diesem Schriftverkehr hervorgehen.
+
+
+
+
+<button type="button" class="collapsebutton" data-toggle="collapse" data-target="#Quellen">Quellen- und Literaturverzeichnis</button>
+<div id="Quellen" class="collapse">
+
+<p>
+
+
+## 8. Quellenverzeichnis lokales Archiv (Quellen für Daten zu Stadtbezirken, Zu- und Fortzügen sowie Bevölkerungsstand)
+
+Veröffentlichungen des Deutschen Städtetags veröffentlichen Bevölkerungdaten zu dem vorherigen Jahr. Das gilt auch für die hier aufgeführten Sonderhefte der Dortmunder Statistik.
+
+
+Dortmunder Statistik. Sonderheft 1. Hrsg. v.Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1956.
+
+Dortmunder Statistik. Sonderheft 6. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1958.
+
+Dortmunder Statistik. Sonderheft 8. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1959.
+
+Dortmunder Statistik. Sonderheft 9. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1959.
+
+Dortmunder Statistik. Sonderheft 11. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1959.
+
+Dortmunder Statistik. Sonderheft 12. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1960.
+
+Dortmunder Statistik. Sonderheft 13. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1961.
+
+Dortmunder Statistik. Sonderheft 17. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1962.
+
+Dortmunder Statistik. Sonderheft 19. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1963.
+
+Dortmunder Statistik. Sonderheft 21. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1964.
+
+Dortmunder Statistik. Sonderheft 23. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1965.
+
+Dortmunder Statistik. Sonderheft 27. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1966.
+
+Dortmunder Statistik. Sonderheft 32. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1967.
+
+Dortmunder Statistik. Sonderheft 34. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1968.
+
+Dortmunder Statistik. Sonderheft 36. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1969.
+
+Dortmunder Statistik. Sonderheft 39. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1970.
+
+Dortmunder Statistik. Sonderheft 44. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1971.
+
+Dortmunder Statistik. Sonderheft 48. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1972.
+
+Dortmunder Statistik. Sonderheft 55. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1972.
+
+Dortmunder Statistik. Sonderheft 59. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1974.
+
+Dortmunder Statistik. Sonderheft 63. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1975.
+
+Dortmunder Statistik. Sonderheft 69. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1976.
+
+Dortmunder Statistik. Sonderheft 72. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1977.
+
+Dortmunder Statistik. Sonderheft 75. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1978.
+
+Dortmunder Statistik. Sonderheft 78. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1979.
+
+Dortmunder Statistik. Sonderheft 82. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1980.
+
+Dortmunder Statistik. Sonderheft 86. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1981.
+
+Dortmunder Statistik. Sonderheft 93. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1982.
+
+Dortmunder Statistik. Sonderheft 96. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1983.
+
+Dortmunder Statistik. Sonderheft 99. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1984.
+
+Dortmunder Statistik. Sonderheft 104. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1985.
+
+Dortmunder Statistik. Sonderheft 108. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1986.
+
+Dortmunder Statistik. Sonderheft 109. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1987.
+
+Dortmunder Statistik. Sonderheft 115. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1988.
+
+Dortmunder Statistik. Sonderheft 124. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1990.
+
+Dortmunder Statistik. Sonderheft 129. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1991.
+
+Dortmunder Statistik. Sonderheft 134. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1992.
+
+Dortmunder Statistik. Sonderheft 136. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1993.
+
+Dortmunder Statistik. Sonderheft 139. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1994.
+
+Dortmunder Statistik. Sonderheft 142. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1995.
+
+Dortmunder Statistik. Sonderheft 144. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1996.
+
+Dortmunder Statistik. Sonderheft 145. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1997.
+
+Dortmunder Statistik. Sonderheft 146. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1998.
+
+Dortmunder Statistik. Sonderheft 148. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1999.
+
+Dortmunder Statistik. Sonderheft 151. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 2000.
+
+Dortmunder Statistik. Sonderheft 154. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 2001.
+
+Statistisches Jahrbuch Deutscher Städte. III. Hrsg. v. M. Neefe, Breslau 1893.
+
+Statistisches Jahrbuch Deutscher Städte. VIII. Hrsg. v. M. Neefe, Breslau 1900.
+
+Statistisches Jahrbuch Deutscher Städte. IX. Hrsg. v. M. Neefe, Breslau 1901.
+
+Statistisches Jahrbuch Deutscher Städte. X. Hrsg. v. M. Neefe, Breslau 1902.
+
+Statistisches Jahrbuch Deutscher Städte. XI. Hrsg. v. M. Neefe, Breslau 1903.
+
+Statistisches Jahrbuch Deutscher Städte. XII. Hrsg. v. M. Neefe, Breslau 1904.
+
+Statistisches Jahrbuch Deutscher Städte. XIII. Hrsg. v. M. Neefe, Breslau 1906.
+
+Statistisches Jahrbuch Deutscher Städte. XIV. Hrsg. v. M. Neefe, Breslau 1907.
+
+Statistisches Jahrbuch Deutscher Städte. XV. Hrsg. v. M. Neefe, Breslau 1908.
+
+Statistisches Jahrbuch Deutscher Städte. XVI. Hrsg. v. M. Neefe, Breslau 1909.
+
+Statistisches Jahrbuch Deutscher Städte. XVII. Hrsg. v. M. Neefe, Breslau 1910.
+
+Statistisches Jahrbuch Deutscher Städte. XVIII. Hrsg. v. M. Neefe, Breslau 1912.
+
+Statistisches Jahrbuch Deutscher Städte. XIX. Hrsg. v. M. Neefe, Breslau 1913.
+
+Statistisches Jahrbuch Deutscher Städte. XX. Hrsg. v. M. Neefe, Breslau 1914.
+
+Statistisches Jahrbuch Deutscher Städte. XXI. Hrsg. v. M. Neefe, Breslau 1916.
+
+Statistisches Jahrbuch Deutscher Städte. XXII. Hrsg. v. Verband der deutschen Städtestatistiker, Jena 1927.
+
+Statistisches Jahrbuch Deutscher Städte. XXIII. Hrsg. v. Verband der deutschen Städtestatistiker, Jena 1928.
+
+Statistisches Jahrbuch Deutscher Städte. 24. Jahrgang. Hrsg. v. Verband der deutschen Städtestatistiker, Jena 1929.
+
+Statistisches Jahrbuch Deutscher Städte. 25. Jahrgang. Hrsg. v. Verband der deutschen Städtestatistiker, Jena 1930.
+
+Statistisches Jahrbuch Deutscher Städte. 26. Jahrgang. Hrsg. v. Verband der deutschen Städtestatistiker, Jena 1931.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 27. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1932.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 28. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1933.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 29. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1934.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 27. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1932.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 30. Jahrgang. Hrsg. v. Arbeitsgemeinschaft für gemeindliche Statistik, Jena 1935.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 31. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1936.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 32. Jahrgang. Hrsg. v. Deutschen Gemeindetag, Jena 1937.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 33. Jahrgang. Hrsg. v. Mewes, Bernhard; Zeitler, Ralf, Jena 1938.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 34. Jahrgang. Hrsg. v. Mewes, Bernhard; Zeitler, Ralf, Jena 1939.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 35. Jahrgang. Hrsg. v. Mewes, Bernhard; Zeitler, Ralf, Jena 1940.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 36. Jahrgang. Hrsg. v. Mewes, Bernhard; Zeitler, Ralf, Jena 1941.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 37. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1949.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 38. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1950.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 39. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1951.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 40. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1952.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 41. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1953.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 42. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1954.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 43. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1955.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 44. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1956.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 45. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1957.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 46. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1958.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 47. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1959.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 48. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1960.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 49. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1961.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 50. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1962.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 51. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1963.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 52. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1964.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 53. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1965.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 54. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1966.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 55. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1967/68.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 56. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1969.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 57. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1970.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 58. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1971.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 59. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1972.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 60. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1973.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 61. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1974.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 62. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1975.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 63. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1976.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 64. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1977.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 65. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1978.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 66. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1979.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 67. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1980.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 68. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1981.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 69. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1982.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 70. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1983.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 71. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1984.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 72. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1985.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 73. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1986.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 74. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1987.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 76. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1989.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 78. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1991.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 80. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1993.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 81. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1994.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 82. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1995.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 83. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1996.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 84. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1997.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 85. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1998.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 86. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 1999.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 87. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 2000.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 88. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 2001.
+
+Statistisches Jahrbuch Deutscher Gemeinden. 89. Jahrgang. Hrsg. v. Deutschen Städtetag, Braunschweig 2002.
+
+
+
+## 9. Quellen mit zusätzlichen Infos zu Demographie, Wirtschaft, Wohnsituation
+
+Dortmunder Statistik. August-Bericht 1957 (Nr. 8). Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1957a.
+
+Dortmunder Statistik. Sonderheft 10. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1959.
+
+Dortmunder Statistik. Sonderheft 20. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1963.
+
+Dortmunder Statistik. Sonderheft 24. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1965.
+
+Dortmunder Statistik. Sonderheft 25. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1965.
+
+Dortmunder Statistik. Sonderheft 28. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1966.
+
+Dortmunder Statistik. Sonderheft 37. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1969a.
+
+Dortmunder Statistik. Sonderheft 68. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1976a.
+
+Dortmunder Statistik. Sonderheft 74. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1977a.
+
+Dortmunder Statistik. Sonderheft 132. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1991.
+
+Dortmunder Statistik. Sonderheft 137. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 1993a.
+
+Dortmunder Statistik. Sonderheft 156. Hrsg. v. Amt für Statistik und Wahlen der Stadt Dortmund, Dortmund 2001.
+
+
+## 10. Stadtarchiv Dortmund (Gesamtbevölkerung 1900-1945 der Dortmunder Statistik, Stadtbezirksdaten vor 1955, Zu-/Fortzüge 1925-1954 gemäß Dortmunder Statistik) 
+
+Bevölkerungsstatistik. Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 36. 
+
+Entwicklung der Einwohnerzahlen. Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 38.
+
+Entwicklung der Einwohnerzahlen seit 1818. Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 39.
+
+Gebiets- und Einwohnerzahlen nach Stadtteilen (Flächenangaben und Eingemeindungen).Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 44.
+
+Wanderungsstatistik. Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 54.
+
+Wanderungsstatistik. Amt für Statistik und Wahlen. Stadtarchiv Dortmund. Bestand 112, Lfd. Nr.: 55.
+
+
+Insofern Untersuchungen von Quellen durchgeführt werden sollen, welche im Stadtarchiv Dortmund archiviert sind, werden folgende Empfehlungen ausgesprochen:
+
+1. Lückenlose Recherche im Vorfeld. 
+Die Identifizierung potenziell geeigneter Quellen sollte vor Kontaktaufnahme und Besuch des Stadtarchivs abgeschlossen sein. Über diesen Link können Sie im Katalog des Stadtarchivs nach Quellen suchen. Eine einfache Hilfestellung: Alle Dokumente des Amts für Statistik und Wahlen haben die Bestandsnummer 112. Über diese Bestandsnummer können die verschiedenen Themenbereiche einfach gesichtet werden, wie zum Beispiel 03.01 Volks-, Berufs- und Arbeitsstättenzählungen. 
+2. Es gibt kein W-LAN im Stadtarchiv, daher sollten alle notwendigen Informationen vorab heruntergeladen oder notiert werden.
+3. Quellen müssen von den Mitarbeiter*innen vorab zum Lesesaal gebracht werden. Daher empfiehlt es sich, einige Tage vor dem geplanten Aufenthalt eine E-Mail an das Stadtarchiv (stadtarchiv-lesesaal@stadtdo.de) zu senden und die gewünschten Quellen immer mit Bestands- und Laufnummer anzugeben. Zudem sollte eine Platzreservierung erbeten werden.
+4. Die technische Ausstattung vor Ort erlaubt meiner Ansicht nach keine effiziente Recherche. Es wird empfohlen, zusätzliche digitale Hilfsmittel mitzubringen, falls dies für die Recherche erforderlich ist. 
+5. Jeden Dienstag und Donnerstag sind Historikerinnen des Stadtarchivs von 10:00 bis 12:00 Uhr vor Ort. Diese können telefonisch unter (0231 / 50-23260) erreicht werden. Es wird empfohlen, nach abgeschlossener Recherche mit den Historikerinnen Kontakt aufzunehmen, die Ergebnisse der Recherche zu besprechen und nachzufragen, ob sie weitere geeignete Quellen kennen.
+
+
+## 11. Literaturverzeichnis
+
+Historische Arbeiten zur Stadt Dortmund enden zu Beginn der 90er Jahre. Eine Aktualisierung des hier zitierten Sammelbands "Geschichte der Stadt Dortmund" durch das Stadtarchiv Dortmund ist in Arbeit. 
+
+Deutscher Historischer Städteatlas 5 (2017) (Folgend zitiert als: "Städteatlas").
+
+Deutsches Historisches Museum (2025, 28.08). Nationalsozialismus, Geburt und Taufe, URL: https://www.dhm.de/archiv/ausstellungen/lebensstationen/ns_2.htm
+Zuletzt besucht am: 25.08.2025
+
+Empfohlene Zitierweise:
+Hinz-Wessels, Annette. Sexuelle Revolution, in: Lebendiges Museum Online, Stiftung Haus der Geschichte der Bundesrepublik Deutschland,
+URL: http://www.hdg.de/lemo/kapitel/geteiltes-deutschland-modernisierung/bundesrepublik-im-wandel/sexuelle-revolution.html
+Zuletzt besucht am: 10.09.2025a.
+
+Hinz-Wessels, Annette. Neue Frauenrolle, in: Lebendiges Museum Online, Stiftung Haus der Geschichte der Bundesrepublik Deutschland,
+URL: http://www.hdg.de/lemo/kapitel/geteiltes-deutschland-modernisierung/bundesrepublik-im-wandel/neue-frauenrolle.html
+Zuletzt besucht am: 10.09.2025.
+
+Högl, Günther: Das 20. Jahrhundert: Urbanität und Demokratie, in: Stadtarchiv Dortmund (Hrsg.): Geschichte der Stadt Dortmund, Dortmund: Harenberg Verlag 1994, S. 355-497.
+
+Högl, Günther: Dortmund im Wiederaufbau 1945-1960. EIne Dokumentation des Stadtarchivs Dortmund, Dortmund 1985.
+
+Luft, Stefan. Die Anwerbung türkischer Arbeitnehmer und ihre Folgen, in Bundeszentrale für politische Bildung, URL: https://www.bpb.de/themen/europa/tuerkei/184981/die-anwerbung-tuerkischer-arbeitnehmer-und-ihre-folgen/#node-content-title-3
+Zuletzt besucht am: 15.09.2025.
+
+Luntowski, Gustav: Das Jahrhundert der Industrialisierung (1803-1914), in: Stadtarchiv Dortmund (Hrsg.): Geschichte der Stadt Dortmund, Dortmund: Harenberg Verlag 1994, S. 355-497.
+
+Luntowski, Gustav: Kleine Wirtschaftsgeschichte von Dortmund. Dortmund: Stadtsparkasse Dortmund 1988.  
+
+Rockrohr, Nina. Der Bergbau, in: Lebendiges Museum Online, Stiftung Haus der Geschichte der Bundesrepublik Deutschland,
+URL: https://www.dhm.de/lemo/kapitel/kaiserreich/industrie/bergbau
+Zuletzt besucht am: 10.09.2025.
+
+Schilp, Thomas; Zupancic, Andrea: Dortmund so wie es war, Düsseldorf 2013.
+
+Sternberg, Philipp: Auswanderungsland, Zuwanderungsland. Die Doppelrolle der Migrationspolitik in der frühen Bundesrepublik, in: Oltmer, Jochen; Kreienbrink, Axel; Sanz Díaz, Carlos (Hrsg.): Das „Gastarbeiter“-System. Arbeitsmigration und ihre Folgen in der Bundesrepublik Deutschland und Westeuropa, München: Oldenburg Verlag, 2012, S. 25-38. 
+ 
+</p>
+<button type="button" class="collapsebuttonclose" data-toggle="collapse" data-target="#Quellen">Quellen- und Literaturverzeichnis schließen</button>
+<div id="Quellen" class="collapse">
+</div>
+</div>
+<p>
+
+
+
+
+
+## R-Community
+
+Das vorliegende Produkt wurde mittels der Open-Source Software R generiert. Für die vielzahl der unentgeltlichen Hilfestellungen der R-Community - insbesondere hinsichtlich der Packages - danken wir sehr. Die Dortmunder Statistik betreut die [interkommunale Arbeitsgemeinschaft KO. R](https://www.staedtestatistik.de/arbeitsgemeinschaften/kosis/kor/ "Dortmunder Statistik") zur Entwicklung kommunalstatistischer Analyse- und Auswertungstools.
+
+
+
+<button type="button" class="collapsebutton" data-toggle="collapse" data-target="#Packages">Die verwendeten Packages im Einzelnen</button>
+<div id="Packages" class="collapse">
+<p> </br></p>
+
+**JJ Allaire, Jeffrey Horner, Yihui Xie, Vicent Marti and Natacha Porte (2019).** markdown: Render Markdown with the C Library 'Sundown'. R package version 1.1. https://CRAN.R-project.org/package=markdown
+<p> 
+**Roger Bivand, Tim Keitt and Barry Rowlingson (2022).** rgdal: Bindings for the 'Geospatial' Data Abstraction Library. R package version 1.5-31. https://CRAN.R-project.org/package=rgdal
+<p>
+**Roger Bivand, Edzer Pebesma, Virgilio Gomez-Rubio (2013).** Applied spatial data analysis with R, Second edition. Springer, NY. https://asdar-book.org/
+<p>
+**Teun van den Brand (2021).** ggh4x: Hacks for 'ggplot2'. R package version 0.2.1. https://CRAN.R-project.org/package=ggh4x
+<p>
+**Allan Cameron and Teun van den Brand (2022).** geomtextpath: Curved Text in 'ggplot2'. R package version 0.1.0. https://CRAN.R-project.org/package=geomtextpath
+<p>
+**Winston Chang (2022).** webshot: Take Screenshots of Web Pages. R package version 0.5.3. https://CRAN.R-project.org/package=webshot
+<p>
+**Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2022).** leaflet: Create Interactive Web Maps with the JavaScript 'Leaflet' Library. R package version 2.1.1. https://CRAN.R-project.org/package=leaflet
+<p>
+**Joe Cheng, Carson Sievert, Barret Schloerke, Winston Chang, Yihui Xie and Jeff Allen (2021).** htmltools: Tools for HTML. R package version 0.5.2. https://CRAN.R-project.org/package=htmltools
+<p>
+**Dewey Dunnington (2021).** ggspatial: Spatial Data Framework for ggplot2. R package version 1.1.5. https://CRAN.R-project.org/package=ggspatial
+<p>
+**Simon Garnier, Noam Ross, Robert Rudis, Antônio P. Camargo, Marco Sciaini, and Cédric Scherer (2021).** Rvision - Colorblind-Friendly Color Maps for R. R package version 0.6.2.
+<p>
+**David Gohel and Panagiotis Skintzos (2022).** ggiraph: Make 'ggplot2' Graphics Interactive. R package version 0.8.2. https://CRAN.R-project.org/package=ggiraph
+<p>
+**Jim Hester and Jennifer Bryan (2022).** glue: Interpreted String Literals. R package version 1.6.2. https://CRAN.R-project.org/package=glue
+<p>
+**Felipe Mattioni Maturana (2022).** downloadthis: Implement Download Buttons in 'rmarkdown'. R package version 0.3.1. https://CRAN.R-project.org/package=downloadthis
+<p>
+**Edzer Pebesma (2018).** Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1), 439-446, https://doi.org/10.32614/RJ-2018-009
+<p>
+**Thomas Lin Pedersen and David Robinson (2020).** gganimate: A Grammar of Animated Graphics. R package version 1.0.7. https://CRAN.R-project.org/package=gganimate
+<p>
+**Kamil Slowikowski (2021).** ggrepel: Automatically Position Non-Overlapping Text Labels with 'ggplot2'. R package version 0.9.1. https://CRAN.R-project.org/package=ggrepel
+<p>
+**Martijn Tennekes (2021).** treemap: Treemap Visualization. R package version 2.4-3. https://CRAN.R-project.org/package=treemap
+<p>
+**Simon Urbanek (2013).** png: Read and write PNG images. R package version 0.1-7. https://CRAN.R-project.org/package=png
+<p>
+**Ramnath Vaidyanathan, Yihui Xie, JJ Allaire, Joe Cheng, Carson Sievert and Kenton Russell (2021).** htmlwidgets: HTML Widgets for R. R package version 1.5.4. https://CRAN.R-project.org/package=htmlwidgets
+<p>
+**Hadley Wickham (2016).** ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag, New York
+<p>
+**Hadley Wickham , Mara Averick, Jennifer Bryan, Winston Chang, Lucy D’Agostino McGowan, Romain François, Garrett Grolemund, Alex Hayes, Lionel Henry, Jim Hester, Max Kuhn, Thomas Lin Pedersen, Evan Miller, Stephan Milton Bache, Kirill Müller, Jeroen Ooms, David Robinson, Dana Paige Seidel, Vitalie Spinu, Kohske Takahashi, Davis Vaughan, Claus Wilke, Kara Woo, and Hiroaki Yutani (2019).** Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+<p>
+**Hadley Wickham and Jennifer Bryan (2022).** readxl: Read Excel Files. R package version 1.4.0. https://CRAN.R-project.org/package=readxl
+<p>
+**Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2022).** dplyr: A Grammar of Data Manipulation. R package version 1.0.8. https://CRAN.R-project.org/package=dplyr
+<p>
+**Hadley Wickham and Dana Seidel (2022).** scales: Scale Functions for Visualization. R package version 1.2.0. https://CRAN.R-project.org/package=scales
+<p>
+**Claus Wilke (2020).** ggtext: Improved Text Rendering Support for 'ggplot2'. R package version 0.1.1. https://CRAN.R-project.org/package=ggtext
+<p>
+**Yihui Xie (2022).** bookdown: Authoring Books and Technical Documents with R Markdown. R package version 0.26.
+
+<button type="button" class="collapsebuttonclose" data-toggle="collapse" data-target="#Packages">Packages ausblenden</button>
+<div id="Packages" class="collapse">
+</div>
+</div>
+
+
+
+## Projekt
+
+Historische Aufarbeitung zur Wissenssicherung und Unterstützung der statistischen Analyse.
+
+Stadt Dortmund, Dortmunder Statistik, 44122 Dortmund, 09/2025.
+
+Erarbeitet im studentischen Praktikum sowie im Rahmen studentischer Mitarbeit durch David Nutz.
+
