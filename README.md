@@ -96,7 +96,7 @@ The statistical findings were then analysed in their historical context, includi
 
 - The analysis demonstrates that historical population statistics must be interpreted in their **methodological and historical context** rather than treated as directly comparable figures.
 
-##Conclusion
+## Conclusion
 
 The project demonstrates how **data analysis, historical source research and source criticism** can be combined to reconstruct long-term demographic trends and investigate **why different official statistics sometimes report different figures for the same population or period**.
 
