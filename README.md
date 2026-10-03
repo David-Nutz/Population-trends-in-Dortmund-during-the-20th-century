@@ -73,6 +73,10 @@ An important methodological aspect is that the yearbooks were based on municipal
 
 Historical documents from the **Dortmund City Archives** were used to investigate discrepancies, methodological changes and individual demographic developments that cannot be explained by the statistical datasets alone.
 
+An overview of Dortmund's Population trends according to the different sources available:
+
+![Population Development](Overview%20Development.png))
+
 ## Methodology
 The project follows a combination of **exploratory data analysis, historical source analysis and comparative statistical analysis**.
 
